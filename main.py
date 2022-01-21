@@ -51,9 +51,6 @@ def testing():
     model.eval()  
     
 
-
-
-
 if __name__ == "__main__":    
     parser = argparse.ArgumentParser(prog='ConDaT', description='Contrastive learning with duration-aware Transformer for novelty detection in time series sensor data', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # for scehme
