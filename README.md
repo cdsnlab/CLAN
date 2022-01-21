@@ -1,1 +1,1 @@
-ConDaT2222
+ConDaT is Contrastive Learning for xxx.
