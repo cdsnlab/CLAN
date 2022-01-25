@@ -263,14 +263,14 @@ def opportunityLoader(file_name):
 def splitting_data(dataset, test_ratio, valid_ratio, overlapped_ratio, seed):
     
     if dataset == 'lapras':
-        dataset_list = laprasLoader('KDD2022/data/Lapras/*.csv')
+        dataset_list = laprasLoader('datadir/*.csv')
     elif dataset == 'casas':
-        dataset_list = casasLoader('KDD2022/data/CASAS/*.txt', overlapped_ratio)
+        dataset_list = casasLoader('datadir/*.txt', overlapped_ratio)
     elif dataset == 'aras':
-        dataset_list_a = arasLoader('KDD2022/data/Aras/HouseA/*.txt', overlapped_ratio)
-        dataset_list_b = arasLoader('KDD2022/data/Aras/HouseB/*.txt', overlapped_ratio)
+        dataset_list_a = arasLoader('datadir/*.txt', overlapped_ratio)
+        dataset_list_b = arasLoader('datadir/*.txt', overlapped_ratio)
     elif dataset == 'opportunity':
-        dataset_list = opportunityLoader('KDD2022/data/Opportunity/*.dat')
+        dataset_list = opportunityLoader('datadir/*.dat')
 
     # Split train and valid dataset 
     train_list, test_list = train_test_split(dataset_list, labels,test_size=test_ratio, stratify=labels, random_state=seed)
