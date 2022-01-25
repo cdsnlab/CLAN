@@ -352,10 +352,10 @@ def splitting_data(dataset, test_ratio, valid_ratio, overlapped_ratio, seed):
     if dataset == 'lapras':
         dataset_list = laprasLoader('datadir/*.csv')
     elif dataset == 'casas':
-        dataset_list = casasLoader('datadir/*.txt', overlapped_ratio)
+        dataset_list = casasLoader('datadir/*.txt')
     elif dataset == 'aras':
-        dataset_list_a = arasLoader('datadir/*.txt', overlapped_ratio)
-        dataset_list_b = arasLoader('datadir/*.txt', overlapped_ratio)
+        dataset_list_a = arasLoader('datadir/*.txt')
+        dataset_list_b = arasLoader('datadir/*.txt')
     elif dataset == 'opportunity':
         dataset_list = opportunityLoader('datadir/*.dat')
 
