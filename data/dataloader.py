@@ -354,7 +354,6 @@ def opportunityLoader(file_name):
     print("Loading Opportunity Dataset Finished--------------------------------------")
     return dataset_list
 
-
 def visualization_data(dataset_list, file_name, activity_num):
     print("Visualizing Dataset --------------------------------------")
     label_count = [0 for x in range(activity_num)]
@@ -382,17 +381,22 @@ def visualization_data(dataset_list, file_name, activity_num):
     print("Visualizing Dataset Finished--------------------------------------")
 
 # split data into train/validate/test 
-def splitting_data(dataset, test_ratio, valid_ratio, overlapped_ratio, seed):
-    
+def splitting_data(dataset, test_ratio, valid_ratio, seed):    
     if dataset == 'lapras':
-        dataset_list = laprasLoader('datadir/*.csv')
+        dataset_list = laprasLoader('KDD2022/data/Lapras/*.csv')
+        visualization_data(dataset_list, 'KDD2022/data/Lapras/', 5)
     elif dataset == 'casas':
-        dataset_list = casasLoader('datadir/*.txt')
-    elif dataset == 'aras':
-        dataset_list_a = arasLoader('datadir/*.txt')
-        dataset_list_b = arasLoader('datadir/*.txt')
+        dataset_list = casasLoader('KDD2022/data/CASAS/*.txt')
+        visualization_data(dataset_list, 'KDD2022/data/CASAS/', 15)
+    elif dataset == 'aras_a':
+        dataset_list = arasLoader('KDD2022/data/Aras/HouseA/*.txt')
+        visualization_data(dataset_list, 'KDD2022/data/Aras/HouseA/', 27*100 + 27)
+    elif dataset == 'aras_b':
+        dataset_list = arasLoader('KDD2022/data/Aras/HouseB/*.txt')
+        visualization_data(dataset_list, 'KDD2022/data/Aras/HouseB/', 27*100 + 27)
     elif dataset == 'opportunity':
-        dataset_list = opportunityLoader('datadir/*.dat')
+        dataset_list = opportunityLoader('KDD2022/data/Opportunity/*.dat')
+        visualization_data(dataset_list, 'KDD2022/data/Opportunity/', 5)
 
     # Split train and valid dataset 
     train_list, test_list = train_test_split(dataset_list, labels,test_size=test_ratio, stratify=labels, random_state=seed)
