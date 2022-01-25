@@ -29,8 +29,7 @@ def label_num(filename):
 
 # Lapras data format : Sensor type, context name, start time, end time / file name = activity label
 # Examples(csv) : Seat Occupy,1,1.490317862115E12,1.490319250294E12,23.136316666666666
-def laprasLoader(file_name):
-    
+def laprasLoader(file_name):    
     print("Loading Lapras Dataset")
     # variable initialization
     file_list = [] # store file names
@@ -53,6 +52,7 @@ def laprasLoader(file_name):
     # sorting by file name
     file_list.sort()
 
+    # using for finding start time and end time
     start_time  = 0
     end_time = 0
 
@@ -79,10 +79,7 @@ def laprasLoader(file_name):
                     state_list.append(temp_df[i, 1])
 
         time_list.append([start_time, end_time])
-    # print(item_list)
-    # print(state_list)
-    # print(label_list)
-    # print(time_list)
+
     item_list= ['Seat Occupy', 'Sound', 'Brightness', 'Light', 'Existence', 'Projector', 'Presentation']
     count_file = 0
     # for each file
@@ -92,13 +89,11 @@ def laprasLoader(file_name):
 
         # at least one ADL exist in the file
         if(len(temp_df)>0):              
-            #print(int((time_list[count_file-1][1]-time_list[count_file-1][0])/(timespan)),len(item_list))
+
             temp_dataset = np.zeros((int((time_list[count_file][1]-time_list[count_file][0])/(timespan)),len(item_list)))
             
             # for each sensor
             for i in range(0, len(temp_df)):
-            #print("1", temp_df[i, 3], temp_df[i, 2], time_list[count_file][0] )
-            #print(int((temp_df[i, 3]-time_list[count_file][0])/(timespan)), int((temp_df[i, 2]-time_list[count_file][0])/(timespan)))
                 for j in range(int((temp_df[i, 2]-time_list[count_file][0])/(timespan)), int((temp_df[i, 3]-time_list[count_file][0])/(timespan))):
                     # count based event
                     if(temp_df[i, 0] == 'Seat Occupy' or temp_df[i, 0] == 'Existence'):                
@@ -206,7 +201,6 @@ def casasLoader(file_name):
                             if(len(temp_dataset)>len_th):
                                 # construct new object(for old activity)          
                                 dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
-                                print(rid, current_label, len(temp_dataset))
                                 # just for show 
                                 label_list.append(current_label)          
                                             
@@ -227,7 +221,7 @@ def casasLoader(file_name):
                     dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
                     # just for show
                     label_list.append(current_label)
-                    print(rid, current_label, len(temp_dataset))
+
 
     return dataset_list
 
