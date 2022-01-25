@@ -1,4 +1,3 @@
-from fileinput import filename
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -6,6 +5,8 @@ import pandas as pd
 import numpy as np
 import csv
 from glob import glob
+import matplotlib.pyplot as plt
+
 
 # Static variable
 timespan = 1000 # for each timespan sec (1000==1 sec)
