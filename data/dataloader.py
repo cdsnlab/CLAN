@@ -15,8 +15,8 @@ len_th = 10 # minimum sequence length
 class TSDataSet:
     def __init__(self,data, label, length):
         self.data = data
-        self.label = label
-        self.length= length
+        self.label = int(label)
+        self.length= int(length)
         
 # use for lapras dataset
 def label_num(filename):
@@ -345,6 +345,32 @@ def opportunityLoader(file_name):
             label_list.append(current_label)
 
     return dataset_list
+
+def visualization_data(dataset_list, file_name, activity_num):
+    print("Visualizing Dataset --------------------------------------")
+    label_count = [0 for x in range(activity_num)]
+    # for visualization
+    for k in range(len(dataset_list)):
+        visual_df = pd.DataFrame(dataset_list[k].data)
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        axb = ax.twinx()
+
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Value')
+        ax.grid(True)
+
+        # Plotting on the first y-axis
+        for i in range(len(dataset_list[0].data[0])):
+            ax.plot(visual_df[i], label = str(i+1))
+
+        ax.legend(loc='upper left')
+        
+        plt.savefig(file_name+'visualization/'+str(dataset_list[k].label)+'_'+str(label_count[dataset_list[k].label-1])+'.png')
+        plt.close(fig)
+        label_count[dataset_list[k].label-1]+=1
+
+    print("Visualizing Dataset Finished--------------------------------------")
 
 # split data into train/validate/test 
 def splitting_data(dataset, test_ratio, valid_ratio, overlapped_ratio, seed):
