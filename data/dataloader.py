@@ -203,3 +203,24 @@ def opportunityLoader():
     print("Loading Opportunity Dataset")
 
     return 'train', 'test'
+
+# split data into train/validate/test 
+def splitting_data(dataset, test_ratio, valid_ratio, overlapped_ratio, seed):
+    
+    if dataset == 'lapras':
+        dataset_list = laprasLoader('KDD2022/data/Lapras/*.csv')
+    elif dataset == 'casas':
+        dataset_list = casasLoader('KDD2022/data/CASAS/*.txt', overlapped_ratio)
+    elif dataset == 'aras':
+        dataset_list_a = arasLoader('KDD2022/data/Aras/HouseA/*.txt', overlapped_ratio)
+        dataset_list_b = arasLoader('KDD2022/data/Aras/HouseB/*.txt', overlapped_ratio)
+    elif dataset == 'opportunity':
+        dataset_list = opportunityLoader('KDD2022/data/Opportunity/*.dat')
+
+    # Split train and valid dataset 
+    train_list, test_list = train_test_split(dataset_list, labels,test_size=test_ratio, stratify=labels, random_state=seed)
+    train_list, valid_list = train_test_split(train_list, labels, test_size=valid_ratio, stratify=labels, random_state=seed)
+    print(f"Train Data: {len(train_list)}") # 0.8*0.8 = 0.64
+    print(f"Validation Data: {len(valid_list)}") # 0.8*0.2 = 0.16
+    print(f"Test Data: {len(test_list)}") # 0.2 
+    return train_list, valid_list, test_list
