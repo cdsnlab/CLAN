@@ -296,6 +296,7 @@ def arasLoader(file_name):
 # Examples(txt) : 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 13 17
 # the number of examples : 101(Relaxing) - 40, 102(Coffee time)-20, 103(Early morning)-20, 104(Cleanup)-20, 105(Sandwich time)-20
 def opportunityLoader(file_name):
+    print("Loading Opportunity Dataset --------------------------------------")
     # variable initialization
     file_list = [] # store file names
     current_label = 0 # current label
@@ -313,13 +314,12 @@ def opportunityLoader(file_name):
     # sorting by file name
     file_list.sort()
 
-
     # for each file
     for file in file_list :
         temp_df = pd.read_csv(file, sep = ' ', header = None)
         # extract data related to the target ADLs (column :244 => 101~105) and convert to numpy array
-        temp_df = temp_df[temp_df[244]>100].to_numpy()    
-
+        temp_df = temp_df[temp_df[244]>100].to_numpy() 
+        print(file)
 
         # at least one ADL exist in the file
         if(len(temp_df)>0):
@@ -339,7 +339,7 @@ def opportunityLoader(file_name):
                     # if the activity is finished (new activity arrival)
                     else:
                         # construct new object(for old activity)          
-                        dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
+                        dataset_list.append(TSDataSet(temp_dataset,  (current_label-100), len(temp_dataset)))
                         # just for show 
                         label_list.append(current_label)          
                                         
@@ -348,11 +348,12 @@ def opportunityLoader(file_name):
                         current_label = temp_df[i, 244]
 
             # for the last activity
-            dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
+            dataset_list.append(TSDataSet(temp_dataset,  (current_label-100), len(temp_dataset)))
             # just for show
             label_list.append(current_label)
-
+    print("Loading Opportunity Dataset Finished--------------------------------------")
     return dataset_list
+
 
 def visualization_data(dataset_list, file_name, activity_num):
     print("Visualizing Dataset --------------------------------------")
