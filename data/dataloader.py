@@ -17,7 +17,7 @@ class TSDataSet:
         self.data = data
         self.label = label
         self.length= length
-
+        
 # use for lapras dataset
 def label_num(filename):
     label_cadidate = ['Chatting', 'Discussion', 'GroupStudy', 'Presentation', 'NULL']
@@ -26,7 +26,6 @@ def label_num(filename):
         if filename.find(label_cadidate[i]) > 0:
             label_num = i+1    
     return label_num
-
 
 # Lapras data format : Sensor type, context name, start time, end time / file name = activity label
 # Examples(csv) : Seat Occupy,1,1.490317862115E12,1.490319250294E12,23.136316666666666
