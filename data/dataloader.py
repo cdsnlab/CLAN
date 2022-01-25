@@ -28,8 +28,6 @@ def laprasLoader():
 
 # CASAS data format : timestamp(when activated), sensor type+context name, state, user #, activity label / file name = day 
 # Examples(txt) : 2008-11-10 14:28:17.986759 M22 ON 2 2 
-# CASAS data format : timestamp(when activated), sensor type+context name, state, user #, activity label / file name = day 
-# Examples(txt) : 2008-11-10 14:28:17.986759 M22 ON 2 2 
 def casasLoader(file_name):
     print("Loading Casas Dataset")
     # variable initialization
