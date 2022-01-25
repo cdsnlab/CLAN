@@ -7,7 +7,6 @@ import csv
 from glob import glob
 import matplotlib.pyplot as plt
 
-
 # Static variable
 timespan = 1000 # for each timespan sec (1000==1 sec)
 len_th = 10 # minimum sequence length
@@ -18,7 +17,7 @@ class TSDataSet:
         self.data = data
         self.label = int(label)
         self.length= int(length)
-        
+
 # use for lapras dataset
 def label_num(filename):
     label_cadidate = ['Chatting', 'Discussion', 'GroupStudy', 'Presentation', 'NULL']
