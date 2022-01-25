@@ -75,7 +75,6 @@ def laprasLoader(file_name):
     # print(label_list)
     # print(time_list)
     item_list= ['Seat Occupy', 'Sound', 'Brightness', 'Light', 'Existence', 'Projector', 'Presentation']
-
     count_file = 0
     # for each file
     for file in file_list:
