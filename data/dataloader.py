@@ -20,11 +20,96 @@ class TSDataSet:
 
 # Lapras data format : Sensor type, context name, start time, end time / file name = activity label
 # Examples(csv) : Seat Occupy,1,1.490317862115E12,1.490319250294E12,23.136316666666666
-def laprasLoader():
+def laprasLoader(file_name):
     
     print("Loading Lapras Dataset")
+    # variable initialization
+    file_list = [] # store file names
+    current_label = 0 # current label
+    current_time = 0 # current time
 
-    return 'train', 'test'
+    # return variable (an object list)
+    dataset_list = []
+    # show how labels are displayed
+    label_list = []
+
+    # sensor types
+    item_list = []
+    state_list = []
+    time_list = []
+
+    # extract file names
+    for x in glob(file_name):
+        file_list.append(x)
+    # sorting by file name
+    file_list.sort()
+
+    start_time  = 0
+    end_time = 0
+
+    # for finding sensor types
+    for file in file_list:
+        temp_df = pd.read_csv(file, sep = ',', header = None)
+        temp_df = temp_df.to_numpy() # 0: sensor type, 1: state, 2: start_time, 3: end_ time
+        
+        
+        label_list.append(label_num(file))
+        # if the file is not empty
+        if(len(temp_df)>0):
+            start_time = temp_df[0, 2]
+            end_time = temp_df[len(temp_df)-1,3]
+            # for each row
+            for i in range(0, len(temp_df)):
+                if(temp_df[i, 2] < start_time):
+                    start_time = temp_df[i, 2] 
+                if(temp_df[i, 3] > end_time):
+                    end_time = temp_df[i, 3]                
+                if temp_df[i, 0] not in item_list:
+                    item_list.append(temp_df[i, 0])   
+                if temp_df[i, 1] not in state_list:
+                    state_list.append(temp_df[i, 1])
+
+        time_list.append([start_time, end_time])
+    # print(item_list)
+    # print(state_list)
+    # print(label_list)
+    # print(time_list)
+    item_list= ['Seat Occupy', 'Sound', 'Brightness', 'Light', 'Existence', 'Projector', 'Presentation']
+
+    count_file = 0
+    # for each file
+    for file in file_list:
+        temp_df = pd.read_csv(file, sep = ',', header = None)
+        temp_df = temp_df.to_numpy()
+
+        # at least one ADL exist in the file
+        if(len(temp_df)>0):              
+            #print(int((time_list[count_file-1][1]-time_list[count_file-1][0])/(timespan)),len(item_list))
+            temp_dataset = np.zeros((int((time_list[count_file][1]-time_list[count_file][0])/(timespan)),len(item_list)))
+            
+            # for each sensor
+            for i in range(0, len(temp_df)):
+            #print("1", temp_df[i, 3], temp_df[i, 2], time_list[count_file][0] )
+            #print(int((temp_df[i, 3]-time_list[count_file][0])/(timespan)), int((temp_df[i, 2]-time_list[count_file][0])/(timespan)))
+                for j in range(int((temp_df[i, 2]-time_list[count_file][0])/(timespan)), int((temp_df[i, 3]-time_list[count_file][0])/(timespan))):
+                    # count based event
+                    if(temp_df[i, 0] == 'Seat Occupy' or temp_df[i, 0] == 'Existence'):                
+                        temp_dataset[j][item_list.index(temp_df[i, 0])] += 1
+                    # state based event
+                    elif(temp_df[i,0] == 'Sound' or temp_df[i,0] == 'Brightness'):
+                        temp_dataset[j][item_list.index(temp_df[i, 0])] = int(temp_df[i,1])%10
+                    # actiation based event
+                    elif(temp_df[i,0] == 'Light' or temp_df[i,0] == 'Projector' or temp_df[i,0] == 'Presentation'):
+                        temp_dataset[j][item_list.index(temp_df[i, 0])] = 1
+
+            if(len(temp_dataset)> len_th):
+                current_label = label_list[count_file] # label list  
+                dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
+        # for next file
+        count_file+=1
+
+    return dataset_list
+
 
 # CASAS data format : timestamp(when activated), sensor type+context name, state, user #, activity label / file name = day 
 # Examples(txt) : 2008-11-10 14:28:17.986759 M22 ON 2 2 
