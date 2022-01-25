@@ -354,6 +354,7 @@ def opportunityLoader(file_name):
     print("Loading Opportunity Dataset Finished--------------------------------------")
     return dataset_list
 
+# visualization of each activity
 def visualization_data(dataset_list, file_name, activity_num):
     print("Visualizing Dataset --------------------------------------")
     label_count = [0 for x in range(activity_num)]
