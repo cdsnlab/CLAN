@@ -229,13 +229,15 @@ def casasLoader(file_name):
     print("Loading CASAS Dataset Finished--------------------------------------")
     return dataset_list
 
-# ARAS data format : (for each second) sensor type+context name,..., activity label1, activity label2/ file name = day 
+# ARAS data format : (for each second) sensor type+context name,..., activity label1, activity label2 : [1-27]/ file name = day 
 # Examples(txt) : 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 13 17
 def arasLoader(file_name):   
+    print("Loading ARAS Dataset--------------------------------------")
     # variable initialization
     file_list = [] # store file names
     current_label = [0,0] # current label
     current_time = 0 # current time
+
     # return variable (an object list)
     dataset_list = []
     # show how labels are displayed
@@ -251,6 +253,7 @@ def arasLoader(file_name):
     for file in file_list :
         temp_df = pd.read_csv(file, sep = ' ', header = None)
         temp_df = temp_df.to_numpy()
+        print(file)
         # at least one ADL exist in the file
         if(len(temp_df)>0):
             # for the first row
@@ -271,7 +274,7 @@ def arasLoader(file_name):
                     else:
                         if(len(temp_dataset)>len_th):
                             # construct new object(for old activity)          
-                            dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
+                            dataset_list.append(TSDataSet(temp_dataset, (current_label[0]*100+ current_label[1]), len(temp_dataset)))
                             # just for show 
                             label_list.append(current_label)      
                                         
@@ -282,9 +285,10 @@ def arasLoader(file_name):
 
             if(len(temp_dataset)>len_th):
                 # for the last activity
-                dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
+                dataset_list.append(TSDataSet(temp_dataset, (current_label[0]*100+ current_label[1]), len(temp_dataset)))
                 # just for show
                 label_list.append(current_label)
+    print("Loading ARAS Dataset Finished--------------------------------------")
 
     return dataset_list
 
