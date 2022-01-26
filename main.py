@@ -3,10 +3,14 @@ from sklearn.compose import TransformedTargetRegressor
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-from data.dataloader import laprasLoader, casasLoader, arasLoader, opportunityLoader
-from model.transformer import TransformerEncoder 
+from torch.optim.lr_scheduler import StepLR, ExponentialLR, MultiStepLR
+import random
+import os
+import numpy as np
+from data.dataloader import splitting_data
+from model.transformer import TST
 from model.lossfunction import ConTimeLoss, SupConLoss
+from tqdm.notebook import tqdm
 
 #from sklearn.metrics.cluster import normalized_mutual_info_score as nmi_score
 
@@ -15,35 +19,56 @@ def training(model, train_data, args):
     # train mode
     model.train()   
     
+    #optimizer
     if args.optimizer == 'SGD':
         optimizer = SGD(model, 0.1)
     elif args.optimizer == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=0.0001)
-
+    # loss function
     criterion = nn.CrossEntropyLoss()
     #criterion = ConTimeLoss()
    
+    # scheduler
     scheduler1 = ExponentialLR(optimizer, gamma=0.9)
-    scheduler2 = MultiStepLR(optimizer, milestones=[30,80], gamma=0.1)
+    scheduler2 = MultiStepLR(optimizer, milestones=[30,80], gamma=0.1)    
+    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     
     for epoch in range(args.epochs):
-        for input, labels in dataset:
-            
-            # Make gradient as 0
-            optimizer.zero_grad()
+        epoch_loss = 0
+        epoch_accuracy = 0
 
-            # Forward, Backward and Optimization
-            output = model(input)
-            loss = criterion(output, labels)
+        for data, label in tqdm(train_loader):
+            data = data.to(device)
+            label = label.to(device)
+
+            output = model(data)
+            loss = criterion(output, label)
+
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-        scheduler1.step()
-        scheduler2.step()
+            acc = (output.argmax(dim=1) == label).float().mean()
+            epoch_accuracy += acc / len(train_loader)
+            epoch_loss += loss / len(train_loader)
 
-    # Save learned model
-    PATH = './cifar_net.pth'
-    torch.save(model.state_dict(), PATH)
+        with torch.no_grad():
+            epoch_val_accuracy = 0
+            epoch_val_loss = 0
+            for data, label in valid_loader:
+                data = data.to(device)
+                label = label.to(device)
+
+                val_output = model(data)
+                val_loss = criterion(val_output, label)
+
+                acc = (val_output.argmax(dim=1) == label).float().mean()
+                epoch_val_accuracy += acc / len(valid_loader)
+                epoch_val_loss += val_loss / len(valid_loader)
+
+        print(
+            f"Epoch : {epoch+1} - loss : {epoch_loss:.4f} - acc: {epoch_accuracy:.4f} - val_loss : {epoch_val_loss:.4f} - val_acc: {epoch_val_accuracy:.4f}\n"
+        )
 
 def testing():
     print("Start Testing----------------")
@@ -51,20 +76,35 @@ def testing():
     model.eval()  
     
 
+def seed_everything(seed):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+
+
+
+
 if __name__ == "__main__":    
     parser = argparse.ArgumentParser(prog='ConDaT', description='Contrastive learning with duration-aware Transformer for novelty detection in time series sensor data', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # for scehme
     parser.add_argument('--dataset', type=str, default='lapras', help='choose one of them: lapras, casas, aras, opportunity')
-    parser.add_argument('--overlapped ratio', type=int, default= 50, help='choose the number of windows''overlapped ratio')
+    parser.add_argument('--test_ratio', type=float, default=0.1, help='choose the number of test ratio')
+    parser.add_argument('--valid_ratio', type=float, default=0.1, help='choose the number of vlaidation ratio')
+    parser.add_argument('--overlapped_ratio', type=int, default= 50, help='choose the number of windows''overlapped ratio')
     parser.add_argument('--encoder', type=str, default='transformer', help='choose one of them: simple, transformer')
 
-    # for training
+    # for training   
     parser.add_argument('--loss', type=str, default='ConDaT', help='choose one of them: simple, transformer')
     parser.add_argument('--optimizer', type=str, default='', help='choose one of them: simple, transformer')
-    parser.add_argument('--epochs', type=int, default=100, help='choose the number of epochs')
-    parser.add_argument('--batch_size', type=int, default=128, help='choose the number of batch size')
+    parser.add_argument('--epochs', type=int, default=20, help='choose the number of epochs')
+    parser.add_argument('--batch_size', type=int, default=64, help='choose the number of batch size')
     parser.add_argument('--lr', type=float, default=0.1, help='choose the number of learning rate')
-
+    parser.add_argument('--gamma', type=float, default=0.7, help='choose the number of gamma')
+    parser.add_argument('--seed', type=int, default=42, help='choose the number of seed')
 
     args = parser.parse_args()
     #parser.print_help()
@@ -76,26 +116,22 @@ if __name__ == "__main__":
     # check gpu is available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(args)
+    
     #print(args.integers)
     #print(args.accumulate(args.integers))   
 
-    # Dataset
-    if args.dataset == 'lapras':
-        train_data, test_data = laprasLoader()
-    elif args.dataset == 'casas':
-         train_data, test_data = casasLoader()
-    elif args.dataset == 'aras':
-         train_data, test_data = arasLoader()
-    elif args.dataset == 'opportunity':
-         train_data, test_data = opportunityLoader()
+    seed_everything(args.seed)
+    #print(args.dataset, args.test_ratio, args.valid_ratio, args.seed)
+    # Dataset extraction (with label coupling)   
+    train_data, valid_test, test_data = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.seed)
 
     # model
-    if args.encoder == 'simple':
-        model = TransformerEncoder(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
-    elif args.encoder == 'transformer':
-        model = TransformerEncoder(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
+    #if args.encoder == 'transformer':
+    #     model = TST(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
+    # elif args.encoder == 'transformer':
+    #     model = TransformerEncoder(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
 
 
-    training(model, train_data, args)
+    # training(model, train_data, args)
     
 
