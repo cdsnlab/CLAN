@@ -28,6 +28,17 @@ def label_num(filename):
             label_num = i+1    
     return label_num
 
+# use for dataset normalization 
+def min_max_scaling(df):
+    # copy the dataframe
+    df_norm = df.copy()
+    # apply min-max scaling
+    for column in df_norm.columns:
+        df_norm[column] = (df_norm[column] - df_norm[column].min()) / (df_norm[column].max() - df_norm[column].min())
+        
+    return round(df_norm,3)
+
+
 # Lapras data format : Sensor type, context name, start time, end time / file name = activity label : [1 : 'Chatting', 2: 'Discussion', 3: 'GroupStudy', 4: 'Presentation', 5: 'NULL']
 # Examples(csv) : Seat Occupy,1,1.490317862115E12,1.490319250294E12,23.136316666666666
 #[1, 2, 3, 5, 4] : activity #, [119, 52, 40, 116, 129], # of activities
@@ -126,7 +137,7 @@ def laprasLoader(file_name):
 # Examples(txt) : 2008-11-10 14:28:17.986759 M22 ON 2 2 
 # [1, 4, 6, 9, 10, 12, 14, 13, 2, 3, 7, 8, 11, 15, 5] : activity #, [50, 26, 27, 24, 26, 34, 26, 43, 26, 26, 26, 24, 27, 26, 17] : # of activities
 def casasLoader(file_name):
-    print("Loading Casas Dataset--------------------------------------")
+    print("Loading CASAS Dataset--------------------------------------")
     # variable initialization
     file_list = [] # store file names
     current_label = 0 # current label
@@ -447,39 +458,65 @@ def count_label_labellist(datalist, labellist):
 # split data into train/validate/test 
 def splitting_data(dataset, test_ratio, valid_ratio, seed):    
     if dataset == 'lapras':
-        dataset_list = laprasLoader('KDD2022/data/Lapras/*.csv')
+        dataset_list = laprasLoader('data/Lapras/*.csv')
         #visualization_data(dataset_list, 'KDD2022/data/Lapras/', 5)
     elif dataset == 'casas':
-        dataset_list = casasLoader('KDD2022/data/CASAS/*.txt')
+        dataset_list = casasLoader('data/CASAS/*.txt')
         #visualization_data(dataset_list, 'KDD2022/data/CASAS/', 15)
     elif dataset == 'aras_a':
-        dataset_list = arasLoader('KDD2022/data/Aras/HouseA/*.txt')
+        dataset_list = arasLoader('data/Aras/HouseA/*.txt')
         #visualization_data(dataset_list, 'KDD2022/data/Aras/HouseA/', 27*100 + 27)
     elif dataset == 'aras_b':
-        dataset_list = arasLoader('KDD2022/data/Aras/HouseB/*.txt')
+        dataset_list = arasLoader('data/Aras/HouseB/*.txt')
         #visualization_data(dataset_list, 'KDD2022/data/Aras/HouseB/', 27*100 + 27)
     elif dataset == 'opportunity':
-        dataset_list = opportunityLoader('KDD2022/data/Opportunity/*.dat')
+        dataset_list = opportunityLoader('data/Opportunity/*.dat')
         #visualization_data(dataset_list, 'KDD2022/data/Opportunity/', 5)
     
     types_label_list, count_label_list = count_label(dataset_list)
     
     # Convert object-list to list-list
-    datalist=[]
     labellist=[]
+    # store each length of samples
+    lengthlist=[]
+    templist=[]
     for i in range(len(dataset_list)):
         # Select datalist by min_samples
-        if(count_label_list[types_label_list.index(dataset_list[i].label)]> min_samples):
-            datalist.append(dataset_list[i].data)
+        if(count_label_list[types_label_list.index(dataset_list[i].label)]>= min_samples):
+            #datalist.append(dataset_list[i].data)        
             labellist.append(dataset_list[i].label)
-    
+            lengthlist.append(len(dataset_list[i].data))
+            for j in range(len(dataset_list[i].data)):
+                templist.append(dataset_list[i].data[j])
+     
+               
+    # normalization of dataframe
+    normalized_df = min_max_scaling(pd.DataFrame(templist))
+    normalized_df = normalized_df.fillna(0)
+
+    # reconstruction of datalist    
+    datalist=[]
+    reconst_list =[]
+    count_lengthlist = 0
+    # for each row
+    for i in range(len(lengthlist)):
+        reconst_list =[]    
+        # cut df by each length
+        for j in range(count_lengthlist,(count_lengthlist+lengthlist[i])):
+            reconst_list.append(normalized_df.iloc[j,:].tolist())    
+        
+        count_lengthlist += lengthlist[i]
+        datalist.append(reconst_list)
+
     count_label_labellist(datalist, labellist)
     # Split train and valid dataset
-    train_list, test_list, train_label_list, test_label_list = train_test_split(datalist, labellist, test_size=test_ratio, stratify= labellist, random_state=seed)
+    train_list, test_list, train_label_list, test_label_list = train_test_split(datalist, labellist, test_size=test_ratio, stratify= labellist, random_state=seed) 
     train_list, valid_list, train_label_list, valid_label_list= train_test_split(train_list, train_label_list, test_size=valid_ratio, stratify=train_label_list, random_state=seed)
 
     print(f"Train Data: {len(train_list)}") 
-    print(f"Validation Data: {len(valid_list)}") 
+    count_label_labellist(train_list, train_label_list)
+    print(f"Validation Data: {len(valid_list)}")
+    count_label_labellist(valid_list, valid_label_list)
     print(f"Test Data: {len(test_list)}") 
-    
+    count_label_labellist(test_list, test_label_list)
     return train_list, valid_list, test_list
