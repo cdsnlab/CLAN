@@ -126,9 +126,8 @@ if __name__ == "__main__":
     #print(args.accumulate(args.integers))   
 
     seed_everything(args.seed)
-    #print(args.dataset, args.test_ratio, args.valid_ratio, args.seed)
     # Dataset extraction   
-    train_data, valid_test, test_data = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.padding, args.seed, args.timespan, args.min_seq, args.min_samples)
+    train_list, valid_list, test_list, train_label_list, valid_label_list, test_label_list = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.padding, args.seed, args.timespan, args.min_seq, args.min_samples)
 
     # model
     # if args.encoder == 'simple':
