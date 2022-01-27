@@ -478,7 +478,9 @@ def padding_by_max(lengthlist, normalized_df):
         else :
             p2d = (0, 0, int((max(lengthlist)-lengthlist[i]+1)/2)-1, int((max(lengthlist)-lengthlist[i]+1)/2))
         datalist.append(F.pad(torch.tensor(reconst_list),p2d,"constant",-1))
-    
+        
+    # convert to tensor    
+    datalist = torch.stack(datalist)
     return datalist
 
 def padding_by_mean(lengthlist, normalized_df):
@@ -501,7 +503,10 @@ def padding_by_mean(lengthlist, normalized_df):
             # padding to the end 
             p2d = (0, 0, 0, mean_length-lengthlist[i])
             datalist.append(F.pad(torch.tensor(reconst_list),p2d,"constant",-1))    
-        count_lengthlist += lengthlist[i]    
+        count_lengthlist += lengthlist[i]
+    
+    # convert to tensor    
+    datalist = torch.stack(datalist)    
     return datalist
 
 def reconstrct_list(lengthlist, normalized_df):
@@ -562,8 +567,10 @@ def splitting_data(dataset, test_ratio, valid_ratio, padding, seed, timespan, mi
     # reconstruction of list (padding is option : max or mean)
     if padding == 'max':
         datalist = padding_by_max(lengthlist, normalized_df)
+        print('tensor_shape', datalist.size())
     elif padding =='mean':
         datalist = padding_by_mean(lengthlist, normalized_df)
+        print('tensor_shape', datalist.size())
     else:
         datalist = reconstrct_list(lengthlist, normalized_df)
 
