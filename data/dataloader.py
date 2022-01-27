@@ -578,4 +578,4 @@ def splitting_data(dataset, test_ratio, valid_ratio, padding, seed, timespan, mi
     count_label_labellist(valid_list, valid_label_list)
     print(f"Test Data: {len(test_list)}") 
     count_label_labellist(test_list, test_label_list)
-    return train_list, valid_list, test_list
+    return train_list, valid_list, test_list, train_label_list, valid_label_list, test_label_list
