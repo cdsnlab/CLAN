@@ -8,7 +8,7 @@ import random
 import os
 import numpy as np
 from data.dataloader import splitting_data
-from model.transformer import TST
+#from model.transformer import TransformerEncoder 
 from model.lossfunction import ConTimeLoss, SupConLoss
 from tqdm.notebook import tqdm
 
@@ -91,7 +91,12 @@ def seed_everything(seed):
 if __name__ == "__main__":    
     parser = argparse.ArgumentParser(prog='ConDaT', description='Contrastive learning with duration-aware Transformer for novelty detection in time series sensor data', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # for scehme
-    parser.add_argument('--dataset', type=str, default='lapras', help='choose one of them: lapras, casas, aras, opportunity')
+    parser.add_argument('--dataset', type=str, default='lapras', help='choose one of them: lapras, casas, aras_a, aras_b, opportunity')
+    parser.add_argument('--padding', type=str, default='mean', help='choose one of them : no, max, mean')
+    parser.add_argument('--timespan', type=int, default=1000, help='choose of the number of timespan between data points(1000 = 1sec, 60000 = 1min)')
+    parser.add_argument('--min_seq', type=int, default=10, help='choose of the minimum number of data points in a example')
+    parser.add_argument('--min_samples', type=int, default=10, help='choose of the minimum number of samples in each label')
+
     parser.add_argument('--test_ratio', type=float, default=0.1, help='choose the number of test ratio')
     parser.add_argument('--valid_ratio', type=float, default=0.1, help='choose the number of vlaidation ratio')
     parser.add_argument('--overlapped_ratio', type=int, default= 50, help='choose the number of windows''overlapped ratio')
@@ -122,12 +127,12 @@ if __name__ == "__main__":
 
     seed_everything(args.seed)
     #print(args.dataset, args.test_ratio, args.valid_ratio, args.seed)
-    # Dataset extraction (with label coupling)   
-    train_data, valid_test, test_data = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.seed)
+    # Dataset extraction   
+    train_data, valid_test, test_data = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.padding, args.seed, args.timespan, args.min_seq, args.min_samples)
 
     # model
-    #if args.encoder == 'transformer':
-    #     model = TST(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
+    # if args.encoder == 'simple':
+    #     model = TransformerEncoder(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
     # elif args.encoder == 'transformer':
     #     model = TransformerEncoder(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
 
