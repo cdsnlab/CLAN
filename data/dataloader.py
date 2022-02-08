@@ -7,7 +7,7 @@ import csv
 from glob import glob
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
-
+import numpy
 # Static variable
 #timespan = 1000 # for each timespan sec (1000==1 sec)
 #min_seq = 10 # minimum sequence length
@@ -462,7 +462,7 @@ def padding_by_max(lengthlist, normalized_df):
     datalist=[]
     reconst_list =[]
     count_lengthlist = 0
-    print("max", max(lengthlist))
+    print("max padding (length): ", max(lengthlist))
     # reconstruction of normalized list
     # for each row
     for i in range(len(lengthlist)):
@@ -489,7 +489,7 @@ def padding_by_mean(lengthlist, normalized_df):
     reconst_list =[]
     count_lengthlist = 0
     mean_length = int(sum(lengthlist)/len(lengthlist))
-    print("mean", mean_length)
+    print("mean padding (length):", mean_length)
     for i in range(len(lengthlist)):
         reconst_list =[]    
         # cut df by each length
@@ -527,7 +527,6 @@ def reconstrct_list(lengthlist, normalized_df):
 # split data into train/validate/test 
 def splitting_data(dataset, test_ratio, valid_ratio, padding, seed, timespan, min_seq, min_samples): 
 
-    print(timespan, min_seq, min_samples)
     if dataset == 'lapras':
         dataset_list = laprasLoader('data/Lapras/*.csv', timespan, min_seq)
         #visualization_data(dataset_list, 'KDD2022/data/Lapras/', 5)
@@ -543,7 +542,7 @@ def splitting_data(dataset, test_ratio, valid_ratio, padding, seed, timespan, mi
     elif dataset == 'opportunity':
         dataset_list = opportunityLoader('data/Opportunity/*.dat', timespan, min_seq)
         #visualization_data(dataset_list, 'KDD2022/data/Opportunity/', 5)
-    
+    print('before padding-----------------')
     types_label_list, count_label_list = count_label(dataset_list)
     
     # Convert object-list to list-list
@@ -567,22 +566,24 @@ def splitting_data(dataset, test_ratio, valid_ratio, padding, seed, timespan, mi
     # reconstruction of list (padding is option : max or mean)
     if padding == 'max':
         datalist = padding_by_max(lengthlist, normalized_df)
-        print('tensor_shape', datalist.size())
+        #print('tensor_shape', datalist.size())
     elif padding =='mean':
         datalist = padding_by_mean(lengthlist, normalized_df)
-        print('tensor_shape', datalist.size())
+        #print('tensor_shape', datalist.size())
     else:
         datalist = reconstrct_list(lengthlist, normalized_df)
 
+    print('after padding-----------------')
+    labellist = (numpy.array(labellist)-1).tolist()
     count_label_labellist(datalist, labellist)
     # Split train and valid dataset
     train_list, test_list, train_label_list, test_label_list = train_test_split(datalist, labellist, test_size=test_ratio, stratify= labellist, random_state=seed) 
     train_list, valid_list, train_label_list, valid_label_list= train_test_split(train_list, train_label_list, test_size=valid_ratio, stratify=train_label_list, random_state=seed)
 
-    print(f"Train Data: {len(train_list)}") 
+    print(f"Train Data: {len(train_list)} --------------") 
     count_label_labellist(train_list, train_label_list)
-    print(f"Validation Data: {len(valid_list)}")
+    print(f"Validation Data: {len(valid_list)} --------------")
     count_label_labellist(valid_list, valid_label_list)
-    print(f"Test Data: {len(test_list)}") 
+    print(f"Test Data: {len(test_list)} --------------") 
     count_label_labellist(test_list, test_label_list)
-    return train_list, valid_list, test_list, train_label_list, valid_label_list, test_label_list
+    return train_list.cuda(), valid_list.cuda(), test_list.cuda(), torch.tensor(train_label_list).cuda(), torch.tensor(valid_label_list).cuda(), torch.tensor(test_label_list).cuda()
