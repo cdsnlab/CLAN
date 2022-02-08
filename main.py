@@ -122,7 +122,7 @@ def validate(val_data, val_label, model, criterion):
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
     return model, losses.avg, top1.avg
 
-def test(test_data, test_label, model, criterion):
+def test(test_data, test_label, model, criterion, num_class):
     model.eval() 
     # test loss 및 accuracy을 모니터링하기 위해 list 초기화
     test_loss = 0.0
@@ -149,6 +149,14 @@ def test(test_data, test_label, model, criterion):
     test_loss = test_loss/len(test_data)
     print('Test Loss: {:.6f}\n'.format(test_loss))
     
+    # clculate confusion matrix
+    stacked = torch.stack((test_label, output.argmax(dim=1)),dim=1)
+    cmt = torch.zeros(num_class, num_class, dtype=torch.int64)
+    for p in stacked:
+        tl, pl = p.tolist()
+        cmt[tl, pl] = cmt[tl, pl] + 1
+    print(cmt)
+
 # Training Function
 def train_dp(train_data, train_label, model, criterion, optimizer, epoch):
     """one epoch training"""
@@ -327,7 +335,7 @@ if __name__ == "__main__":
         #        opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
         #    save_model(model, optimizer, opt, epoch, save_file)
 
-    test(test_list, test_label_list, model, criterion)
+    test(test_list, test_label_list, model, criterion,len(types_label_list))
     # cls_token을 반복하여 배치사이즈의 크기와 맞춰줌
     #batch_size = projected_x.shape[0]
     #cls_tokens = repeat(cls_token, '() n e -> b n e', b=batch_size)
