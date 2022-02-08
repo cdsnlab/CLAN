@@ -13,8 +13,9 @@ from data.dataloader import splitting_data, count_label_labellist
 from model.simple import LSTM
 from model.lossfunction import ConTimeLoss, SupConLoss
 from tqdm.notebook import tqdm
-from model.vit import ViT
+from model.vit import ViT, Net
 
+import gc
 import time
 from einops import rearrange, reduce, repeat
 from einops.layers.torch import Rearrange, Reduce
@@ -22,6 +23,7 @@ from einops.layers.torch import Rearrange, Reduce
 import torch.backends.cudnn as cudnn
 from utils.utils import AverageMeter, warmup_learning_rate, accuracy, EarlyStopping
 from sklearn.metrics import f1_score
+
 # Training Function
 def train(train_data, train_label, model, criterion, optimizer, epoch):
     'for one epoch training'
@@ -48,8 +50,9 @@ def train(train_data, train_label, model, criterion, optimizer, epoch):
         # compute loss
         output = model(data)
         loss = criterion(output, labels)
-
+        
         # update metric
+        losses.update(loss.item(), bsz)
         train_f1 = f1_score(labels.cpu(), output.argmax(dim=1).cpu(), average='macro')
         acc1 = (output.argmax(dim=1) == labels).float().mean()
         top1.update(acc1, bsz)
@@ -67,7 +70,7 @@ def train(train_data, train_label, model, criterion, optimizer, epoch):
         end = time.time()
 
         # print info
-        if (i + 1) % 10 == 0:
+        if (i + 1) % 1 == 0:
             print('Train: [{0}][{1}/{2}]\t'
                   'BT {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
@@ -143,7 +146,8 @@ def test(test_data, test_label, model, criterion, num_class):
         # 예측과 실제 라벨과 비교
         correct = np.squeeze(pred.eq(test_label.data.view_as(pred)))
         # 각 object class에 대해 test accuracy 계산
-        print('test_f1', f1_score(test_label.cpu(), output.argmax(dim=1).cpu(), average='macro'))
+        print('\nacc1 : {:.3f}\n'.format((output.argmax(dim=1) == test_label).float().mean()))
+        print('test_f1 : {:.3f}\n'.format(f1_score(test_label.cpu(), output.argmax(dim=1).cpu(), average='macro')))
 
     # calculate and print avg test loss
     test_loss = test_loss/len(test_data)
@@ -157,77 +161,12 @@ def test(test_data, test_label, model, criterion, num_class):
         cmt[tl, pl] = cmt[tl, pl] + 1
     print(cmt)
 
-# Training Function
-def train_dp(train_data, train_label, model, criterion, optimizer, epoch):
-    """one epoch training"""
-    model.train()
-
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-    losses = AverageMeter()
-    top1 = AverageMeter()
-
-    end = time.time()
-    for i in range(len(train_data)):
-        data_time.update(time.time() - end)
-
-        data = train_data[i].cuda(non_blocking=True)
-        label = train_label[i].cuda(non_blocking=True)
-        y_pred = model(data, label)
-        #bsz = label.shape[0]
-        #print(data.shape)
-        #print(labels.shape)
-        # warm-up learning rate
-        #warmup_learning_rate(opt, epoch, i, len(train_data), optimizer)
-
-        # compute loss
-        #output = model(data)
-        
-
-        # update metric
-        #losses.update(loss.item(), bsz)
-        #acc1, acc5 = accuracy(output, labels, topk=(1, 5))
-        #print(f1_score(labels.cpu(), output.argmax(dim=1).cpu() , average='macro'))
-        #print('train_f1', f1_score(label.cpu(), output.argmax.cpu(), average='macro'))
-        #acc1 = (output.argmax == label).float().mean()
-        #epoch_val_accuracy += acc / len(valid_loader)
-        #    epoch_val_loss += val_loss / len(valid_loader)
-        #top1.update(acc1, bsz)
-
-        # SGD
-        optimizer.zero_grad()
-        loss = criterion(y_pred, label)
-        loss.backward()
-        optimizer.step()
-        sum_loss += loss.item()*label.shape[0]
-        total += label.shape[0]
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
-
-        # print info
-        if (i + 1) % 10 == 0:
-            print('Train: [{0}][{1}/{2}]\t'
-                  'BT {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'loss {loss.val:.3f} ({loss.avg:.3f})\t'
-                  'Acc@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
-                   epoch, i + 1, len(train_data), batch_time=batch_time,
-                   data_time=data_time, loss=losses, top1=top1))
-            sys.stdout.flush()
-
-    return model, losses.avg, top1.avg
-
-
-
-
-
 # Setting the model 
 def set_model(num_classes,feature_dim, dim, model_type):
     if(model_type == 'simple'):
-        model = LSTM(feature_dim= feature_dim, dim=feature_dim).to(device)
+        model = Net(num_classes=num_classes, feature_dim= feature_dim, dim=dim).to(device)
     elif(model_type == 'transformer'):
-        model = ViT(num_classes=num_classes, feature_dim= feature_dim, dim=dim)
+        model = ViT(num_classes=num_classes, feature_dim= feature_dim, dim=dim).to(device)
     # loss function
     criterion = nn.CrossEntropyLoss()
     
@@ -276,6 +215,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     print('options', args)
+    gc.collect()
+    torch.cuda.empty_cache()
 
     # check gpu is available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -334,7 +275,7 @@ if __name__ == "__main__":
         #    save_file = os.path.join(
         #        opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
         #    save_model(model, optimizer, opt, epoch, save_file)
-
+    model.load_state_dict(torch.load('checkpoint.pt'))
     test(test_list, test_label_list, model, criterion,len(types_label_list))
     # cls_token을 반복하여 배치사이즈의 크기와 맞춰줌
     #batch_size = projected_x.shape[0]
