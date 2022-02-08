@@ -1,80 +1,236 @@
 import argparse
+from cProfile import label
 from sklearn.compose import TransformedTargetRegressor
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR, ExponentialLR, MultiStepLR
 import random
-import os
+import os, sys
 import numpy as np
-from data.dataloader import splitting_data
-#from model.transformer import TransformerEncoder 
+from data.dataloader import splitting_data, count_label_labellist
+#from model.transformer import TransformerModel
+from model.simple import LSTM
 from model.lossfunction import ConTimeLoss, SupConLoss
 from tqdm.notebook import tqdm
+from model.vit import ViT
 
+import time
+from einops import rearrange, reduce, repeat
+from einops.layers.torch import Rearrange, Reduce
 #from sklearn.metrics.cluster import normalized_mutual_info_score as nmi_score
-
-def training(model, train_data, args):
-    print("Start Training----------------")
-    # train mode
-    model.train()   
+import torch.backends.cudnn as cudnn
+from utils.utils import AverageMeter, warmup_learning_rate, accuracy, EarlyStopping
+from sklearn.metrics import f1_score
+# Training Function
+def train(train_data, train_label, model, criterion, optimizer, epoch):
+    'for one epoch training'
+    model.train()
     
-    #optimizer
-    if args.optimizer == 'SGD':
-        optimizer = SGD(model, 0.1)
-    elif args.optimizer == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+
+    end = time.time()
+
+    # for each batch
+    for i in range(1):
+        data_time.update(time.time() - end)
+
+        data = train_data.to(device)
+        labels = train_label.to(device)
+        # batch size
+        bsz = labels.shape[0]
+        # warm-up learning rate
+        #warmup_learning_rate(opt, epoch, i, len(train_data), optimizer)
+
+        # compute loss
+        output = model(data)
+        loss = criterion(output, labels)
+
+        # update metric
+        train_f1 = f1_score(labels.cpu(), output.argmax(dim=1).cpu(), average='macro')
+        acc1 = (output.argmax(dim=1) == labels).float().mean()
+        top1.update(acc1, bsz)
+        #epoch_val_accuracy += acc / len(valid_loader)
+        #    epoch_val_loss += val_loss / len(valid_loader)
+        
+
+        # SGD
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        # print info
+        if (i + 1) % 10 == 0:
+            print('Train: [{0}][{1}/{2}]\t'
+                  'BT {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'loss {loss.val:.3f} ({loss.avg:.3f})\t'
+                  'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                  'F1 {train_f1:.3f}'.format(
+                   epoch, i + 1, len(train_data), batch_time=batch_time,
+                   data_time=data_time, loss=losses, top1=top1, train_f1=train_f1))
+            sys.stdout.flush()
+
+    return model, losses.avg, top1.avg
+
+# Validate the model
+def validate(val_data, val_label, model, criterion):
+    'for one epoch validation'
+    model.eval()
+
+    batch_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+
+    with torch.no_grad():
+        # for each batch
+        end = time.time()
+        for i in range(1):
+            data = val_data.to(device)
+            labels = val_label.to(device)
+            bsz = labels.shape[0]
+
+            # forward
+            output = model(data)
+            loss = criterion(output, labels)
+
+            # update metric
+            losses.update(loss.item(), bsz)
+            acc1 = (output.argmax(dim=1) == labels).float().mean()
+            top1.update(acc1, bsz)
+            val_f1 = f1_score(labels.cpu(), output.argmax(dim=1).cpu(), average='macro')
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            if i % 1 == 0:
+                print('Test: [{0}/{1}]\t'
+                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                      'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                      'F1 {val_f1:.3f}'.format(
+                       i, len(val_data), batch_time=batch_time,
+                       loss=losses, top1=top1, val_f1=val_f1))
+
+    print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
+    return model, losses.avg, top1.avg
+
+def test(test_data, test_label, model, criterion):
+    model.eval() 
+    # test loss 및 accuracy을 모니터링하기 위해 list 초기화
+    test_loss = 0.0
+    class_correct = list(0. for i in range(10))
+    class_total = list(0. for i in range(10))
+
+    model.eval() # prep model for evaluation
+
+    for i in range(1):
+        # forward pass: 입력을 모델로 전달하여 예측된 출력 계산
+        output = model(test_data)
+        # calculate the loss
+        loss = criterion(output, test_label)
+        # update test loss
+        test_loss += loss.item()*test_data.size(0)
+        # 출력된 확률을 예측된 클래스로 변환
+        _, pred = torch.max(output, 1)
+        # 예측과 실제 라벨과 비교
+        correct = np.squeeze(pred.eq(test_label.data.view_as(pred)))
+        # 각 object class에 대해 test accuracy 계산
+        print('test_f1', f1_score(test_label.cpu(), output.argmax(dim=1).cpu(), average='macro'))
+
+    # calculate and print avg test loss
+    test_loss = test_loss/len(test_data)
+    print('Test Loss: {:.6f}\n'.format(test_loss))
+    
+# Training Function
+def train_dp(train_data, train_label, model, criterion, optimizer, epoch):
+    """one epoch training"""
+    model.train()
+
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+
+    end = time.time()
+    for i in range(len(train_data)):
+        data_time.update(time.time() - end)
+
+        data = train_data[i].cuda(non_blocking=True)
+        label = train_label[i].cuda(non_blocking=True)
+        y_pred = model(data, label)
+        #bsz = label.shape[0]
+        #print(data.shape)
+        #print(labels.shape)
+        # warm-up learning rate
+        #warmup_learning_rate(opt, epoch, i, len(train_data), optimizer)
+
+        # compute loss
+        #output = model(data)
+        
+
+        # update metric
+        #losses.update(loss.item(), bsz)
+        #acc1, acc5 = accuracy(output, labels, topk=(1, 5))
+        #print(f1_score(labels.cpu(), output.argmax(dim=1).cpu() , average='macro'))
+        #print('train_f1', f1_score(label.cpu(), output.argmax.cpu(), average='macro'))
+        #acc1 = (output.argmax == label).float().mean()
+        #epoch_val_accuracy += acc / len(valid_loader)
+        #    epoch_val_loss += val_loss / len(valid_loader)
+        #top1.update(acc1, bsz)
+
+        # SGD
+        optimizer.zero_grad()
+        loss = criterion(y_pred, label)
+        loss.backward()
+        optimizer.step()
+        sum_loss += loss.item()*label.shape[0]
+        total += label.shape[0]
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        # print info
+        if (i + 1) % 10 == 0:
+            print('Train: [{0}][{1}/{2}]\t'
+                  'BT {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'loss {loss.val:.3f} ({loss.avg:.3f})\t'
+                  'Acc@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
+                   epoch, i + 1, len(train_data), batch_time=batch_time,
+                   data_time=data_time, loss=losses, top1=top1))
+            sys.stdout.flush()
+
+    return model, losses.avg, top1.avg
+
+
+
+
+
+# Setting the model 
+def set_model(num_classes,feature_dim, dim, model_type):
+    if(model_type == 'simple'):
+        model = LSTM(feature_dim= feature_dim, dim=feature_dim).to(device)
+    elif(model_type == 'transformer'):
+        model = ViT(num_classes=num_classes, feature_dim= feature_dim, dim=dim)
     # loss function
     criterion = nn.CrossEntropyLoss()
-    #criterion = ConTimeLoss()
-   
-    # scheduler
-    scheduler1 = ExponentialLR(optimizer, gamma=0.9)
-    scheduler2 = MultiStepLR(optimizer, milestones=[30,80], gamma=0.1)    
-    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     
-    for epoch in range(args.epochs):
-        epoch_loss = 0
-        epoch_accuracy = 0
+    if torch.cuda.is_available():
+        if torch.cuda.device_count() > 1:
+            model = torch.nn.DataParallel(model)
+        model = model.cuda()
+        criterion = criterion.cuda()
+        cudnn.benchmark = True
 
-        for data, label in tqdm(train_loader):
-            data = data.to(device)
-            label = label.to(device)
-
-            output = model(data)
-            loss = criterion(output, label)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            acc = (output.argmax(dim=1) == label).float().mean()
-            epoch_accuracy += acc / len(train_loader)
-            epoch_loss += loss / len(train_loader)
-
-        with torch.no_grad():
-            epoch_val_accuracy = 0
-            epoch_val_loss = 0
-            for data, label in valid_loader:
-                data = data.to(device)
-                label = label.to(device)
-
-                val_output = model(data)
-                val_loss = criterion(val_output, label)
-
-                acc = (val_output.argmax(dim=1) == label).float().mean()
-                epoch_val_accuracy += acc / len(valid_loader)
-                epoch_val_loss += val_loss / len(valid_loader)
-
-        print(
-            f"Epoch : {epoch+1} - loss : {epoch_loss:.4f} - acc: {epoch_accuracy:.4f} - val_loss : {epoch_val_loss:.4f} - val_acc: {epoch_val_accuracy:.4f}\n"
-        )
-
-def testing():
-    print("Start Testing----------------")
-    # train mode
-    model.eval()  
-    
+    return model, criterion   
 
 def seed_everything(seed):
     random.seed(seed)
@@ -84,8 +240,6 @@ def seed_everything(seed):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
-
-
 
 
 if __name__ == "__main__":    
@@ -105,30 +259,87 @@ if __name__ == "__main__":
     # for training   
     parser.add_argument('--loss', type=str, default='ConDaT', help='choose one of them: simple, transformer')
     parser.add_argument('--optimizer', type=str, default='', help='choose one of them: simple, transformer')
-    parser.add_argument('--epochs', type=int, default=20, help='choose the number of epochs')
+    parser.add_argument('--epochs', type=int, default=10000, help='choose the number of epochs')
+    parser.add_argument('--patience', type=int, default=100, help='choose the number of patience for early stopping')
     parser.add_argument('--batch_size', type=int, default=64, help='choose the number of batch size')
-    parser.add_argument('--lr', type=float, default=0.1, help='choose the number of learning rate')
+    parser.add_argument('--lr', type=float, default=3e-5, help='choose the number of learning rate')
     parser.add_argument('--gamma', type=float, default=0.7, help='choose the number of gamma')
     parser.add_argument('--seed', type=int, default=42, help='choose the number of seed')
 
     args = parser.parse_args()
-    #parser.print_help()
-
-    #parser.add_argument('integers', metavar='N', type=int, nargs='+',                        help='an integer for the accumulator')
-    #parser.add_argument('--sum', dest='accumulate', action='store_const',                        const=sum, default=max,                        help='sum the integers (default: find the max)')
-
+    print('options', args)
 
     # check gpu is available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(args)
-    
-    #print(args.integers)
-    #print(args.accumulate(args.integers))   
-
+    print('available device :', device)
     seed_everything(args.seed)
-    # Dataset extraction   
+    # Dataset extraction (Batch, Feature dimension, Time_step)
     train_list, valid_list, test_list, train_label_list, valid_label_list, test_label_list = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.padding, args.seed, args.timespan, args.min_seq, args.min_samples)
 
+    print('finishing data processing-------------------------')
+    types_label_list, _ =count_label_labellist(train_list, train_label_list)
+    print('The number of classes: ', len(types_label_list))
+
+    print('train data shape:', train_list.shape)
+    print('train label shape:', train_label_list.shape)
+    
+
+    # set model for using   
+    model, criterion = set_model(len(types_label_list), len(train_list[0][0]), 64, args.encoder)
+    # set optimizer
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    # set scheduler
+    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
+    # set early stopping
+    early_stopping = EarlyStopping(patience = args.patience, verbose = True)
+    
+    print('starting training and validation-------------------------------------------------------------')
+    # training routine
+    for epoch in range(args.epochs):
+        #adjust_learning_rate(opt, optimizer, epoch)
+        # train for one epoch
+        time1 = time.time()
+        model, loss, train_acc = train(train_list, train_label_list, model, criterion, optimizer, epoch)
+         
+        time2 = time.time()
+        print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
+
+        # tensorboard logger
+        #print('train_loss', loss, epoch)
+        #print('train_acc', train_acc, epoch)
+        #print('learning_rate', optimizer.param_groups[0]['lr'], epoch)
+
+        # evaluation
+        model, loss, val_acc = validate(valid_list, valid_label_list, model, criterion)
+        #print('val_loss', loss, epoch)
+        #print('val_acc', val_acc, epoch)
+
+        early_stopping(loss, model)
+
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+        #if val_acc > best_acc:
+        #    best_acc = val_acc
+
+        #if epoch % opt.save_freq == 0:
+        #    save_file = os.path.join(
+        #        opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
+        #    save_model(model, optimizer, opt, epoch, save_file)
+
+    test(test_list, test_label_list, model, criterion)
+    # cls_token을 반복하여 배치사이즈의 크기와 맞춰줌
+    #batch_size = projected_x.shape[0]
+    #cls_tokens = repeat(cls_token, '() n e -> b n e', b=batch_size)
+    #print('Repeated Cls shape :', cls_tokens.shape)
+
+    # cls_token과 projected_x를 concatenate
+    #cat_x = torch.cat([cls_tokens, projected_x], dim=1)
+
+    # position encoding을 더해줌
+    #cat_x += positions
+    #print('output : ', cat_x.shape)
+    #
     # model
     # if args.encoder == 'simple':
     #     model = TransformerEncoder(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
@@ -136,6 +347,4 @@ if __name__ == "__main__":
     #     model = TransformerEncoder(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
 
 
-    # training(model, train_data, args)
-    
-
+  
