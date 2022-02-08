@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-
+import torch.nn.functional as F
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 
@@ -77,16 +77,13 @@ class Transformer(nn.Module):
         return x
 
 class ViT(nn.Module):
-    def __init__(self, *, num_classes, feature_dim, dim, depth=12, kernel_size=10, stride =3,
-    heads=2, mlp_dim =64, pool = 'cls', dim_head = 64, dropout = 0., emb_dropout = 0.):
+    def __init__(self, *, num_classes, feature_dim, dim, depth=12, kernel_size=10, stride = 5,
+    heads=2, mlp_dim =64, pool = 'cls', dim_head = 64, dropout = 0., emb_dropout = 0.2):
         super().__init__()
 
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
 
-        self.to_patch_embedding = nn.Sequential(
-            nn.Conv1d(feature_dim, dim, kernel_size=kernel_size, stride =stride)
-        )
-        
+        self.to_patch_embedding = nn.Sequential(nn.Conv1d(feature_dim, dim, kernel_size=kernel_size, stride =stride))        
         #self.pos_embedding = nn.Parameter(torch.randn(1, time_length+ 1, dim))
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
         self.dropout = nn.Dropout(emb_dropout)
@@ -106,7 +103,7 @@ class ViT(nn.Module):
         x = torch.transpose(data,1,2)
         x = self.to_patch_embedding(x)
         x = torch.transpose(x,1,2)
-        self.pos_embedding = nn.Parameter(torch.randn(x.shape[1]+1,self.dim))        
+        self.pos_embedding = nn.Parameter(torch.randn(x.shape[1]+1, self.dim))        
         b, n, _ = x.shape
 
         cls_tokens = repeat(self.cls_token, '() n d -> b n d', b = b)
@@ -120,3 +117,36 @@ class ViT(nn.Module):
 
         x = self.to_latent(x)
         return self.mlp_head(x)
+    
+
+class Net(nn.Module):
+    def __init__(self, num_classes, feature_dim, dim, kernel_size=10, stride = 5):
+        super(Net, self).__init__()
+        self.to_patch_embedding = nn.Sequential(nn.Conv1d(feature_dim, dim, kernel_size=kernel_size, stride =stride))
+        self.dim = dim
+        self.fc2 = nn.Linear(dim, dim)
+        self.fc3 = nn.Linear(dim, num_classes)
+        self.dropout = nn.Dropout(0.2)
+
+    def forward(self, x):              
+        x = torch.transpose(x,1,2).cuda()
+        x = self.to_patch_embedding(x).cuda()
+        x = torch.transpose(x,1,2).cuda()
+        x = F.relu(F.max_pool1d(x, 1)).cuda()
+        b, n, d = x.shape
+
+        # image input을 펼쳐준다.
+        x = torch.reshape(x,(-1, n*d)).cuda()
+        
+        self.fc1 = nn.Linear(n*d, self.dim).cuda()
+        # 은닉층을 추가하고 활성화 함수로 relu 사용
+        x = F.relu(self.fc1(x)).cuda()
+        x = self.dropout(x).cuda()
+
+        # 은닉층을 추가하고 활성화 함수로 relu 사용
+        x = F.relu(self.fc2(x)).cuda()
+        x = self.dropout(x).cuda()
+
+        # 출력층 추가
+        x = self.fc3(x).cuda()
+        return x
