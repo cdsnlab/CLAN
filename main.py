@@ -10,10 +10,10 @@ import os, sys
 import numpy as np
 from data.dataloader import splitting_data, count_label_labellist
 #from model.transformer import TransformerModel
-from model.simple import LSTM
+from model.simple import LSTM, Net
 from model.lossfunction import ConTimeLoss, SupConLoss
 from tqdm.notebook import tqdm
-from model.vit import ViT, Net
+from model.vit import ViT
 
 import gc
 import time
@@ -139,10 +139,12 @@ def test(test_data, test_label, model, criterion, num_class):
         output = model(test_data)
         # calculate the loss
         loss = criterion(output, test_label)
+        #print(output, test_label)
         # update test loss
         test_loss += loss.item()*test_data.size(0)
         # 출력된 확률을 예측된 클래스로 변환
         _, pred = torch.max(output, 1)
+        #print(pred, test_label)
         # 예측과 실제 라벨과 비교
         correct = np.squeeze(pred.eq(test_label.data.view_as(pred)))
         # 각 object class에 대해 test accuracy 계산
@@ -155,6 +157,7 @@ def test(test_data, test_label, model, criterion, num_class):
     
     # clculate confusion matrix
     stacked = torch.stack((test_label, output.argmax(dim=1)),dim=1)
+    #print(stacked)
     cmt = torch.zeros(num_class, num_class, dtype=torch.int64)
     for p in stacked:
         tl, pl = p.tolist()
@@ -162,14 +165,17 @@ def test(test_data, test_label, model, criterion, num_class):
     print(cmt)
 
 # Setting the model 
-def set_model(num_classes,feature_dim, dim, model_type):
+def set_model(num_classes,feature_dim, dim, model_type, loss, temp =0):
     if(model_type == 'simple'):
         model = Net(num_classes=num_classes, feature_dim= feature_dim, dim=dim).to(device)
     elif(model_type == 'transformer'):
         model = ViT(num_classes=num_classes, feature_dim= feature_dim, dim=dim).to(device)
     # loss function
-    criterion = nn.CrossEntropyLoss()
-    
+    if(loss == 'CE'):
+        criterion = nn.CrossEntropyLoss()
+    elif(loss =='ConDaT'):
+        criterion = SupConLoss(temperature= temp)
+
     if torch.cuda.is_available():
         if torch.cuda.device_count() > 1:
             model = torch.nn.DataParallel(model)
@@ -196,7 +202,7 @@ if __name__ == "__main__":
     parser.add_argument('--padding', type=str, default='mean', help='choose one of them : no, max, mean')
     parser.add_argument('--timespan', type=int, default=1000, help='choose of the number of timespan between data points(1000 = 1sec, 60000 = 1min)')
     parser.add_argument('--min_seq', type=int, default=10, help='choose of the minimum number of data points in a example')
-    parser.add_argument('--min_samples', type=int, default=10, help='choose of the minimum number of samples in each label')
+    parser.add_argument('--min_samples', type=int, default=20, help='choose of the minimum number of samples in each label')
 
     parser.add_argument('--test_ratio', type=float, default=0.1, help='choose the number of test ratio')
     parser.add_argument('--valid_ratio', type=float, default=0.1, help='choose the number of vlaidation ratio')
@@ -204,7 +210,7 @@ if __name__ == "__main__":
     parser.add_argument('--encoder', type=str, default='transformer', help='choose one of them: simple, transformer')
 
     # for training   
-    parser.add_argument('--loss', type=str, default='ConDaT', help='choose one of them: simple, transformer')
+    parser.add_argument('--loss', type=str, default='CE', help='choose one of them: simple, transformer')
     parser.add_argument('--optimizer', type=str, default='', help='choose one of them: simple, transformer')
     parser.add_argument('--epochs', type=int, default=10000, help='choose the number of epochs')
     parser.add_argument('--patience', type=int, default=100, help='choose the number of patience for early stopping')
@@ -212,6 +218,7 @@ if __name__ == "__main__":
     parser.add_argument('--lr', type=float, default=3e-5, help='choose the number of learning rate')
     parser.add_argument('--gamma', type=float, default=0.7, help='choose the number of gamma')
     parser.add_argument('--seed', type=int, default=42, help='choose the number of seed')
+    parser.add_argument('--temp', type=float, default=0.07, help='temperature for loss function')
 
     args = parser.parse_args()
     print('options', args)
@@ -223,18 +230,18 @@ if __name__ == "__main__":
     print('available device :', device)
     seed_everything(args.seed)
     # Dataset extraction (Batch, Feature dimension, Time_step)
-    train_list, valid_list, test_list, train_label_list, valid_label_list, test_label_list = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.padding, args.seed, args.timespan, args.min_seq, args.min_samples)
+    num_classes, train_list, valid_list, test_list, train_label_list, valid_label_list, test_label_list = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.padding, args.seed, args.timespan, args.min_seq, args.min_samples)
 
     print('finishing data processing-------------------------')
-    types_label_list, _ =count_label_labellist(train_list, train_label_list)
-    print('The number of classes: ', len(types_label_list))
+    #types_label_list, _ =count_label_labellist(train_list, train_label_list)
+    print('The number of classes: ', num_classes)
 
     print('train data shape:', train_list.shape)
     print('train label shape:', train_label_list.shape)
     
 
     # set model for using   
-    model, criterion = set_model(len(types_label_list), len(train_list[0][0]), 64, args.encoder)
+    model, criterion = set_model(len(num_classes), len(train_list[0][0]), 64, args.encoder, args.loss, args.temp)
     # set optimizer
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     # set scheduler
@@ -276,24 +283,7 @@ if __name__ == "__main__":
         #        opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
         #    save_model(model, optimizer, opt, epoch, save_file)
     model.load_state_dict(torch.load('checkpoint.pt'))
-    test(test_list, test_label_list, model, criterion,len(types_label_list))
-    # cls_token을 반복하여 배치사이즈의 크기와 맞춰줌
-    #batch_size = projected_x.shape[0]
-    #cls_tokens = repeat(cls_token, '() n e -> b n e', b=batch_size)
-    #print('Repeated Cls shape :', cls_tokens.shape)
-
-    # cls_token과 projected_x를 concatenate
-    #cat_x = torch.cat([cls_tokens, projected_x], dim=1)
-
-    # position encoding을 더해줌
-    #cat_x += positions
-    #print('output : ', cat_x.shape)
-    #
-    # model
-    # if args.encoder == 'simple':
-    #     model = TransformerEncoder(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
-    # elif args.encoder == 'transformer':
-    #     model = TransformerEncoder(BasicBlock, [2,2,2,2], args.num_labeled_classes, args.num_unlabeled_classes).to(device)
+    test(test_list, test_label_list, model, criterion,len(num_classes))
 
 
   
