@@ -441,11 +441,11 @@ def count_label(dataset_list):
                 
     return types_label_list, count_label_list
 
-def count_label_labellist(datalist, labellist):
+def count_label_labellist(labellist):
     # finding types and counts of label
     types_label_list =[]
     count_label_list = []
-    for i in range(len(datalist)):
+    for i in range(len(labellist)):
         if(labellist[i] not in types_label_list):
             types_label_list.append(labellist[i])
             count_label_list.append(1)
@@ -525,7 +525,7 @@ def reconstrct_list(lengthlist, normalized_df):
     return datalist
 
 # split data into train/validate/test 
-def splitting_data(dataset, test_ratio, valid_ratio, padding, seed, timespan, min_seq, min_samples): 
+def loading_data(dataset, padding, timespan, min_seq, min_samples): 
 
     if dataset == 'lapras':
         dataset_list = laprasLoader('data/Lapras/*.csv', timespan, min_seq)
@@ -544,7 +544,7 @@ def splitting_data(dataset, test_ratio, valid_ratio, padding, seed, timespan, mi
         #visualization_data(dataset_list, 'KDD2022/data/Opportunity/', 5)
     print('before padding-----------------')
     types_label_list, count_label_list = count_label(dataset_list)
-    
+    num_classes = types_label_list
     # Convert object-list to list-list
     labellist=[]
     # store each length of samples
@@ -572,18 +572,25 @@ def splitting_data(dataset, test_ratio, valid_ratio, padding, seed, timespan, mi
         #print('tensor_shape', datalist.size())
     else:
         datalist = reconstrct_list(lengthlist, normalized_df)
+    
 
     print('after padding-----------------')
+    
+    return datalist, labellist, num_classes
+
+def splitting_data(dataset, test_ratio, valid_ratio, padding, seed, timespan, min_seq, min_samples): 
+    datalist, labellist, num_classes = loading_data(dataset, padding, timespan, min_seq, min_samples)
+
     labellist = (numpy.array(labellist)-1).tolist()
-    count_label_labellist(datalist, labellist)
+    count_label_labellist(labellist)
     # Split train and valid dataset
     train_list, test_list, train_label_list, test_label_list = train_test_split(datalist, labellist, test_size=test_ratio, stratify= labellist, random_state=seed) 
     train_list, valid_list, train_label_list, valid_label_list= train_test_split(train_list, train_label_list, test_size=valid_ratio, stratify=train_label_list, random_state=seed)
 
     print(f"Train Data: {len(train_list)} --------------") 
-    count_label_labellist(train_list, train_label_list)
+    count_label_labellist(train_label_list)
     print(f"Validation Data: {len(valid_list)} --------------")
-    count_label_labellist(valid_list, valid_label_list)
+    count_label_labellist(valid_label_list)
     print(f"Test Data: {len(test_list)} --------------") 
-    count_label_labellist(test_list, test_label_list)
-    return train_list.cuda(), valid_list.cuda(), test_list.cuda(), torch.tensor(train_label_list).cuda(), torch.tensor(valid_label_list).cuda(), torch.tensor(test_label_list).cuda()
+    count_label_labellist(test_label_list)
+    return num_classes, datalist.cuda(), train_list.cuda(), valid_list.cuda(), test_list.cuda(), torch.tensor(labellist).cuda(), torch.tensor(train_label_list).cuda(), torch.tensor(valid_label_list).cuda(), torch.tensor(test_label_list).cuda()
