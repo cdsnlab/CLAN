@@ -8,9 +8,11 @@ from torch.optim.lr_scheduler import StepLR, ExponentialLR, MultiStepLR
 import random
 import os, sys
 import numpy as np
-from data.dataloader import splitting_data, count_label_labellist
+from utils.visualization import tsne_visualization
+from data.dataloader import loading_data, splitting_data, count_label_labellist
 #from model.transformer import TransformerModel
 from model.simple import LSTM, Net
+from model.resnet_big import ResNetBaseline, ResNetSupCon
 from model.lossfunction import ConTimeLoss, SupConLoss
 from tqdm.notebook import tqdm
 from model.vit import ViT
@@ -21,7 +23,7 @@ from einops import rearrange, reduce, repeat
 from einops.layers.torch import Rearrange, Reduce
 #from sklearn.metrics.cluster import normalized_mutual_info_score as nmi_score
 import torch.backends.cudnn as cudnn
-from utils.utils import AverageMeter, warmup_learning_rate, accuracy, EarlyStopping
+from utils.utils import AverageMeter, warmup_learning_rate, accuracy, EarlyStopping, save_model
 from sklearn.metrics import f1_score
 
 # Training Function
@@ -76,12 +78,62 @@ def train(train_data, train_label, model, criterion, optimizer, epoch):
                   'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'loss {loss.val:.3f} ({loss.avg:.3f})\t'
                   'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'F1 {train_f1:.3f}'.format(
-                   epoch, i + 1, len(train_data), batch_time=batch_time,
+                  'F1 {train_f1:.3f}'.format(epoch, i + 1, len(train_data), batch_time=batch_time,
                    data_time=data_time, loss=losses, top1=top1, train_f1=train_f1))
             sys.stdout.flush()
 
     return model, losses.avg, top1.avg
+
+# Training Function
+def train_supcon(train_data, train_label, model, criterion, optimizer, epoch):
+    'for one epoch training'
+    model.train()
+    
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+
+    end = time.time()
+
+    # for each batch
+    for i in range(1):
+        data_time.update(time.time() - end)
+
+        data = train_data.to(device)
+        labels = train_label.to(device)
+        # batch size
+        bsz = labels.shape[0]
+        # warm-up learning rate
+        #warmup_learning_rate(opt, epoch, i, len(train_data), optimizer)
+
+        # compute loss
+        output = model(data)
+        loss = criterion(output, labels)
+        
+        # update metric
+        losses.update(loss.item(), bsz)
+
+        # SGD
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        # print info
+        if (i + 1) % 1 == 0:
+            print('Train: [{0}][{1}/{2}]\t'
+                  'BT {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'loss {loss.val:.3f} ({loss.avg:.3f})'.format(
+                   epoch,  i + 1, len(train_data), batch_time=batch_time,
+                   data_time=data_time, loss=losses))
+            sys.stdout.flush()
+
+    return model, losses.avg
+
 
 # Validate the model
 def validate(val_data, val_label, model, criterion):
@@ -118,8 +170,7 @@ def validate(val_data, val_label, model, criterion):
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                       'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                      'F1 {val_f1:.3f}'.format(
-                       i, len(val_data), batch_time=batch_time,
+                      'F1 {val_f1:.3f}'.format(i, len(val_data), batch_time=batch_time,
                        loss=losses, top1=top1, val_f1=val_f1))
 
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
@@ -139,6 +190,7 @@ def test(test_data, test_label, model, criterion, num_class):
         output = model(test_data)
         # calculate the loss
         loss = criterion(output, test_label)
+        
         #print(output, test_label)
         # update test loss
         test_loss += loss.item()*test_data.size(0)
@@ -155,7 +207,7 @@ def test(test_data, test_label, model, criterion, num_class):
     test_loss = test_loss/len(test_data)
     print('Test Loss: {:.6f}\n'.format(test_loss))
     
-    # clculate confusion matrix
+    # calculate confusion matrix
     stacked = torch.stack((test_label, output.argmax(dim=1)),dim=1)
     #print(stacked)
     cmt = torch.zeros(num_class, num_class, dtype=torch.int64)
@@ -164,16 +216,22 @@ def test(test_data, test_label, model, criterion, num_class):
         cmt[tl, pl] = cmt[tl, pl] + 1
     print(cmt)
 
+    return output 
+
 # Setting the model 
-def set_model(num_classes,feature_dim, dim, model_type, loss, temp =0):
+def set_model(num_classes,feature_dim, dim, model_type, loss, temp= 0):
     if(model_type == 'simple'):
         model = Net(num_classes=num_classes, feature_dim= feature_dim, dim=dim).to(device)
     elif(model_type == 'transformer'):
         model = ViT(num_classes=num_classes, feature_dim= feature_dim, dim=dim).to(device)
+    elif(model_type =='ResNet'):
+        model = ResNetBaseline(in_channels=feature_dim, num_pred_classes=num_classes).to(device)
+    
     # loss function
     if(loss == 'CE'):
         criterion = nn.CrossEntropyLoss()
     elif(loss =='ConDaT'):
+        model = ResNetSupCon()
         criterion = SupConLoss(temperature= temp)
 
     if torch.cuda.is_available():
@@ -213,7 +271,7 @@ if __name__ == "__main__":
     parser.add_argument('--loss', type=str, default='CE', help='choose one of them: simple, transformer')
     parser.add_argument('--optimizer', type=str, default='', help='choose one of them: simple, transformer')
     parser.add_argument('--epochs', type=int, default=10000, help='choose the number of epochs')
-    parser.add_argument('--patience', type=int, default=100, help='choose the number of patience for early stopping')
+    parser.add_argument('--patience', type=int, default=20, help='choose the number of patience for early stopping')
     parser.add_argument('--batch_size', type=int, default=64, help='choose the number of batch size')
     parser.add_argument('--lr', type=float, default=3e-5, help='choose the number of learning rate')
     parser.add_argument('--gamma', type=float, default=0.7, help='choose the number of gamma')
@@ -230,14 +288,17 @@ if __name__ == "__main__":
     print('available device :', device)
     seed_everything(args.seed)
     # Dataset extraction (Batch, Feature dimension, Time_step)
-    num_classes, train_list, valid_list, test_list, train_label_list, valid_label_list, test_label_list = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.padding, args.seed, args.timespan, args.min_seq, args.min_samples)
+    data_list, label_list, num_classes = loading_data(args.dataset, args.padding, args.timespan, 2, 2)
+    tsne_visualization(data_list, label_list, args.dataset, 3)
 
+    num_classes, entire_list, train_list, valid_list, test_list, entire_label_list, train_label_list, valid_label_list, test_label_list = splitting_data(args.dataset, args.test_ratio, args.valid_ratio, args.padding, args.seed, args.timespan, args.min_seq, args.min_samples)
+    
     print('finishing data processing-------------------------')
     #types_label_list, _ =count_label_labellist(train_list, train_label_list)
     print('The number of classes: ', num_classes)
 
     print('train data shape:', train_list.shape)
-    print('train label shape:', train_label_list.shape)
+    print('train label shape:', train_label_list.shape)   
     
 
     # set model for using   
@@ -283,7 +344,8 @@ if __name__ == "__main__":
         #        opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
         #    save_model(model, optimizer, opt, epoch, save_file)
     model.load_state_dict(torch.load('checkpoint.pt'))
-    test(test_list, test_label_list, model, criterion,len(num_classes))
-
-
-  
+    test(test_list, test_label_list, model, criterion, len(num_classes))
+    save_model(model, optimizer, args, epoch, 'last.pth')
+    
+    embedding = test(entire_list, entire_label_list, model, criterion, len(num_classes))
+    tsne_visualization(embedding.cpu(), entire_label_list.cpu(), args.dataset+'_test', 2)
