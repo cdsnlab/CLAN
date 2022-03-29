@@ -38,3 +38,31 @@ def fill_graph():
     plt.plot(x_values, y_values) #this is the line itself
     plt.show()
     fig.savefig('loss_plot.png', bbox_inches = 'tight')
+
+def tsne_visualization(data_list, label_list, dataset, dim):
+
+    label_list = torch.tensor(label_list).tolist()
+    num_classes, _ = count_label_labellist(label_list)
+    
+    print('Shaped x', data_list.shape)
+    print(label_list)
+    print(type(data_list))
+    if(dim>=3):
+        x_rs = np.reshape(data_list, [data_list.shape[0], data_list.shape[1]*data_list.shape[2]])
+    else:
+        label_list = (np.array(label_list)+1).tolist()
+        x_rs = data_list.detach().numpy() 
+    print('Reshaped x', x_rs.shape)
+    print(type(x_rs))
+
+    tsne = TSNE(n_components=2, verbose=1, random_state=123)
+    z = tsne.fit_transform(x_rs)
+    df = pd.DataFrame()
+    df["y"] = label_list    
+    df["comp-1"] = z[:,0]
+    df["comp-2"] = z[:,1]
+    splot  = sns.scatterplot(x="comp-1", y="comp-2", hue=df.y.tolist(),
+                palette=sns.color_palette("hls",len(num_classes)), data=df).set(title= dataset+" data T-SNE projection")
+    plt.savefig(dataset+' saving-a-high-resolution-seaborn-plot.png', dpi=300)
+    # clear the plot 
+    plt.cla() 
