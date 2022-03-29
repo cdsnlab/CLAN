@@ -26,3 +26,15 @@ def early_stopping_visualization(train_loss, valid_loss):
     plt.tight_layout()
     plt.show()
     fig.savefig('loss_plot.png', bbox_inches = 'tight')
+
+def fill_graph():
+    fig = plt.figure(figsize=(10,8))
+    x_values = range(10)
+    y_values = [10, 12, 13, 13, 15, 19, 20, 22, 23, 29]
+    y_lower = [8, 10, 11, 11, 13, 17, 18, 20, 21, 27]
+    y_upper = [12, 14, 15, 15, 17, 21, 22, 24, 25, 31]
+    
+    plt.fill_between(x_values, y_lower, y_upper, alpha=0.2) #this is the shaded error
+    plt.plot(x_values, y_values) #this is the line itself
+    plt.show()
+    fig.savefig('loss_plot.png', bbox_inches = 'tight')
