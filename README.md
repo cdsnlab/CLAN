@@ -1,1 +1,1 @@
-ConDaT is Contrastive Learning for xxx.
+'CLAN' is Contrastive Learning fo Novelty Detection on Sensor-based Time Series.
