@@ -82,3 +82,7 @@ class ClsTF(nn.Module):
 
         z_time = self.projector_t(h_time)
 
+        s_time = self.sigmoid(self.shift_cls_layer_t(h_time))
+
+
+        return h_time, z_time, s_time
