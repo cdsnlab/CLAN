@@ -9,11 +9,25 @@ class PERMUTE():
         
     def augment(self, x):
         # input : (N, T, C)
-        # reshape과 swapaxes/transpose 유의
+        # Note 'reshape' and 'swapaxes/transpose' are different 
 
         orig_steps = np.arange(x.shape[1])
         num_segs = np.random.randint(self.min, self.max , size=(x.shape[0]))
         ret = np.zeros_like(x)
+
+        # for each sample
+        for i, pat in enumerate(x):
+            if num_segs[i] > 1:
+                if self.seg_mode == "random":
+                    split_points = np.random.choice(x.shape[1] - 2, num_segs[i] - 1, replace=False)
+                    split_points.sort()                
+                    splits = np.split(orig_steps, split_points)
+                else:
+                    splits = np.array_split(orig_steps, num_segs[i])
+                warp = np.concatenate(np.random.permutation(splits)).ravel()
+                ret[i] = pat[warp, : ]
+            else:
+                ret[i] = pat
 
 
 def select_transformation(aug_method, seq_len):
