@@ -51,4 +51,7 @@ class ConTF(nn.Module):
 
             # Projection layer for frequency encoder
             z_freq = self.projector_f(h_freq)
+
+            # Shifted transformation classifier for frequency encoder
+            s_freq = self.shift_cls_layer_f(h_freq)
         
