@@ -14,5 +14,6 @@ class ConTF(nn.Module):
 
         self.projector_t = nn.Sequential(
             nn.Linear(configs.TSlength_aligned * configs.input_channels, 256),
+            nn.BatchNorm1d(256),
 
         )
