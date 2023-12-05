@@ -79,3 +79,6 @@ class ClsTF(nn.Module):
 
         x = self.transformer_encoder(x.float())
         h_time = x.reshape(x.shape[0], -1)
+
+        z_time = self.projector_t(h_time)
+
