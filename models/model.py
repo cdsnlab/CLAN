@@ -74,3 +74,8 @@ class ClsTF(nn.Module):
         self.shift_cls_layer = nn.Linear(configs.TSlength_aligned * configs.input_channels, 1)
 
         self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+
+        x = self.transformer_encoder(x.float())
+        h_time = x.reshape(x.shape[0], -1)
