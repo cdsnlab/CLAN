@@ -34,8 +34,11 @@ class ConTF(nn.Module):
         self.shift_cls_layer_f = nn.Linear(configs.TSlength_aligned_2 * configs.input_channels_2, args.K_shift_f)
 
         def forward(self, x_in_t, x_in_f):
-            
+
             # Transformer architecture for time encoder
             x = self.transformer_encoder_t(x_in_t.float())
             h_time = x.reshape(x.shape[0], -1)
+
+            # Projection layer for time encoder
+            z_time = self.projector_t(h_time)
         
