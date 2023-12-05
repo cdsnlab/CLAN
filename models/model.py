@@ -18,7 +18,15 @@ class ConTF(nn.Module):
 
         encoder_layers_f = TransformerEncoderLayer(configs.TSlength_aligned_2, dim_feedforward=2*configs.TSlength_aligned_2,nhead=1)
         self.transformer_encoder_f = TransformerEncoder(encoder_layers_f, 2)
-        
+
+        self.projector_f = nn.Sequential(
+            nn.Linear(configs.TSlength_aligned_2 * configs.input_channels_2, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Linear(256, 128)
+        )                   
+        self.shift_cls_layer_f = nn.Linear(configs.TSlength_aligned_2 * configs.input_channels_2, args.K_shift_f)
+
 
     def forward(self, x_in_t, x_in_f):
 
