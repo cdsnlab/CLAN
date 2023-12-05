@@ -16,5 +16,5 @@ class ConTF(nn.Module):
             nn.Linear(configs.TSlength_aligned * configs.input_channels, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-
+            nn.Linear(256, 128)
         )
