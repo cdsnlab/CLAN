@@ -72,3 +72,5 @@ class ClsTF(nn.Module):
             nn.Linear(256, 128)
         )
         self.shift_cls_layer = nn.Linear(configs.TSlength_aligned * configs.input_channels, 1)
+
+        self.sigmoid = nn.Sigmoid()
