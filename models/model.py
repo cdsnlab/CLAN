@@ -2,7 +2,7 @@ from torch import nn
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import torch.nn.functional as F
 
-# encoders for novelty detection
+# Encoders for novelty detection
 class ConTF(nn.Module):
     def __init__(self, configs, args):
         super(ConTF, self).__init__()
@@ -33,14 +33,14 @@ class ConTF(nn.Module):
 
     def forward(self, x_in_t, x_in_f):
 
-        # Use Transformer
+        # Transformer architecture for time encoder
         x = self.transformer_encoder_t(x_in_t.float())
         h_time = x.reshape(x.shape[0], -1)
 
-        # Cross-space projector
+        # Projection layer for time encoder
         z_time = self.projector_t(h_time)
 
-        # Shifted transformation classifier
+        # Shifted transformation classifier for time encoder
         s_time = self.shift_cls_layer_t(h_time)\
         
         # Frequency-based contrastive encoder
