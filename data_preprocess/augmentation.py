@@ -29,6 +29,8 @@ class PERMUTE():
             else:
                 ret[i] = pat
 
+        return ret 
+
 
 def select_transformation(aug_method, seq_len):
     if(aug_method == 'AddNoise'):
