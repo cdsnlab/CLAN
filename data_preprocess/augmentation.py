@@ -1,5 +1,12 @@
 from tsaug import *
 
+class PERMUTE():   
+    def __init__(self, min_segments=2, max_segments=15, seg_mode="random"):
+        self.min = min_segments
+        self.max = max_segments
+        self.seg_mode = seg_mode
+        
+
 def select_transformation(aug_method, seq_len):
     if(aug_method == 'AddNoise'):
         my_aug = AddNoise(scale=0.01)
@@ -10,8 +17,3 @@ def select_transformation(aug_method, seq_len):
    
 
 
-class PERMUTE():   
-    def __init__(self, min_segments=2, max_segments=15, seg_mode="random"):
-        self.min = min_segments
-        self.max = max_segments
-        self.seg_mode = seg_mode
