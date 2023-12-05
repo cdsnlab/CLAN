@@ -15,3 +15,17 @@ class ConTF(nn.Module):
             nn.Linear(256, 128)
         )
         self.shift_cls_layer_t = nn.Linear(configs.TSlength_aligned * configs.input_channels, args.K_shift)
+
+    def forward(self, x_in_t):
+
+        """Use Transformer"""
+        x = self.transformer_encoder_t(x_in_t.float())
+        h_time = x.reshape(x.shape[0], -1)
+
+        """Cross-space projector"""
+        z_time = self.projector_t(h_time)
+
+        """Shifted transformation classifier"""
+        s_time = self.shift_cls_layer_t(h_time)\
+    
+        return h_time, z_time, s_time
