@@ -41,4 +41,6 @@ class ConTF(nn.Module):
 
             # Projection layer for time encoder
             z_time = self.projector_t(h_time)
+
+            
         
