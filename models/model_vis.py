@@ -47,4 +47,5 @@ class ConTF(nn.Module):
 
             # Transformer architecture for frequency encoder
             f = self.transformer_encoder_f(x_in_f.float())
+            h_freq = f.reshape(f.shape[0], -1)
         
