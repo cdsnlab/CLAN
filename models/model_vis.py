@@ -54,4 +54,6 @@ class ConTF(nn.Module):
 
             # Shifted transformation classifier for frequency encoder
             s_freq = self.shift_cls_layer_f(h_freq)
+
+            return h_time, z_time, s_time, h_freq, z_freq, s_freq
         
