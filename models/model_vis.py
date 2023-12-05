@@ -18,3 +18,5 @@ class ConTF(nn.Module):
             nn.ReLU(),
             nn.Linear(256, 128)
         )
+
+        self.shift_cls_layer_t = nn.Linear(configs.TSlength_aligned * configs.input_channels, args.K_shift)
