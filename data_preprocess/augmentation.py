@@ -41,5 +41,6 @@ def select_transformation(aug_method, seq_len):
         my_aug = PERMUTE(min_segments=1, max_segments=5, seg_mode="random")
     elif(aug_method == 'Drift'):
         my_aug = Drift(max_drift=0.7, n_drift_points=5)
-
+    elif(aug_method == 'Dropout'):
+        my_aug = (Dropout(p=0.1,fill=0))       
 
