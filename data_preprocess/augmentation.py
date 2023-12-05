@@ -6,6 +6,16 @@ class PERMUTE():
         self.max = max_segments
         self.seg_mode = seg_mode
         
+    def augment(self, x):
+        # input : (N, T, C)
+        # reshape과 swapaxes/transpose 유의
+        
+        orig_steps = np.arange(x.shape[1])
+
+        num_segs = np.random.randint(self.min, self.max , size=(x.shape[0]))
+
+        ret = np.zeros_like(x)
+
 
 def select_transformation(aug_method, seq_len):
     if(aug_method == 'AddNoise'):
