@@ -1,4 +1,5 @@
 from tsaug import *
+import numpy as np
 
 class PERMUTE():   
     def __init__(self, min_segments=2, max_segments=15, seg_mode="random"):
@@ -9,7 +10,7 @@ class PERMUTE():
     def augment(self, x):
         # input : (N, T, C)
         # reshape과 swapaxes/transpose 유의
-        
+
         orig_steps = np.arange(x.shape[1])
 
         num_segs = np.random.randint(self.min, self.max , size=(x.shape[0]))
