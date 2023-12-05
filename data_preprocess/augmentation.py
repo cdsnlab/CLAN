@@ -43,4 +43,6 @@ def select_transformation(aug_method, seq_len):
         my_aug = Drift(max_drift=0.7, n_drift_points=5)
     elif(aug_method == 'Dropout'):
         my_aug = (Dropout(p=0.1,fill=0))       
+    elif(aug_method == 'Pool'):
+        my_aug = Pool(kind='max',size=4)
 
