@@ -30,7 +30,20 @@ class PERMUTE():
                 ret[i] = pat
 
         return ret 
-
+    
+class SCALE():
+    def __init__(self, sigma=1.1, loc = 1.3):
+        self.sigma = sigma
+        self.loc = loc
+    def augment(self, x):
+        # https://arxiv.org/pdf/1706.00527.pdf
+        # loc -> multification #
+        factor = np.random.normal(loc=self.loc, scale=self.sigma, size=(x.shape[0], x.shape[2]))
+        ai = []
+        for i in range(x.shape[1]):
+            xi = x[:, i, :]
+            ai.append(np.multiply(xi, factor[:, :])[:, np.newaxis, :])
+        return np.concatenate((ai), axis=1)
 
 def select_transformation(aug_method, seq_len):
     if(aug_method == 'AddNoise'):
@@ -47,4 +60,6 @@ def select_transformation(aug_method, seq_len):
         my_aug = Pool(kind='max',size=4)
     elif(aug_method == 'Quantize'):
         my_aug = Quantize(n_levels=20)
+    elif(aug_method == 'Resize'):
+        my_aug = SCALE(sigma=1.1, loc = 2.)
 
