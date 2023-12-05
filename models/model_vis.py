@@ -20,3 +20,5 @@ class ConTF(nn.Module):
         )
 
         self.shift_cls_layer_t = nn.Linear(configs.TSlength_aligned * configs.input_channels, args.K_shift)
+
+        encoder_layers_f = TransformerEncoderLayer(configs.TSlength_aligned_2, dim_feedforward=2*configs.TSlength_aligned_2,nhead=1, batch_first = True)
