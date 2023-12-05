@@ -43,14 +43,14 @@ class ConTF(nn.Module):
         # Shifted transformation classifier for time encoder
         s_time = self.shift_cls_layer_t(h_time)\
         
-        # Frequency-based contrastive encoder
+        # Transformer architecture for frequency encoder
         f = self.transformer_encoder_f(x_in_f.float())
         h_freq = f.reshape(f.shape[0], -1)
 
-        # Cross-space projector
+        # Projection layer for frequency encoder
         z_freq = self.projector_f(h_freq)
 
-        # Shifted transformation classifier
+        # Shifted transformation classifier for frequency encoder
         s_freq = self.shift_cls_layer_f(h_freq)
 
         return h_time, z_time, s_time, h_freq, z_freq, s_freq
