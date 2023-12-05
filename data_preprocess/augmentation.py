@@ -39,6 +39,7 @@ def select_transformation(aug_method, seq_len):
         my_aug = Convolve(window="flattop", size=11)
     elif(aug_method == 'Crop'):
         my_aug = PERMUTE(min_segments=1, max_segments=5, seg_mode="random")
-   
+    elif(aug_method == 'Drift'):
+        my_aug = Drift(max_drift=0.7, n_drift_points=5)
 
 
