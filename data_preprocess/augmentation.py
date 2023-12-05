@@ -12,9 +12,7 @@ class PERMUTE():
         # reshape과 swapaxes/transpose 유의
 
         orig_steps = np.arange(x.shape[1])
-
         num_segs = np.random.randint(self.min, self.max , size=(x.shape[0]))
-
         ret = np.zeros_like(x)
 
 
