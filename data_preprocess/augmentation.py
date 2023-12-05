@@ -63,5 +63,7 @@ def select_transformation(aug_method, seq_len):
     elif(aug_method == 'Resize'):
         my_aug = SCALE(sigma=1.1, loc = 2.)
     elif(aug_method == 'Reverse'):
-        my_aug = (Reverse())
+        my_aug = Reverse()
+    elif(aug_method == 'TimeWarp'):
+        my_aug = TimeWarp(n_speed_change=5, max_speed_ratio=3)
 
