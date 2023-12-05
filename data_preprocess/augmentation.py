@@ -66,4 +66,8 @@ def select_transformation(aug_method, seq_len):
         my_aug = Reverse()
     elif(aug_method == 'TimeWarp'):
         my_aug = TimeWarp(n_speed_change=5, max_speed_ratio=3)
+    else:
+        return ValueError
+        
+    return my_aug
 
