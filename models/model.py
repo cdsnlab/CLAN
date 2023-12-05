@@ -54,3 +54,7 @@ class ConTF(nn.Module):
         s_freq = self.shift_cls_layer_f(h_freq)
 
         return h_time, z_time, s_time, h_freq, z_freq, s_freq
+
+
+# Encoder for shifted samples classification
+class ClsTF(nn.Module):
