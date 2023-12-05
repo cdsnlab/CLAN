@@ -13,4 +13,6 @@ class ConTF(nn.Module):
         self.transformer_encoder_t = TransformerEncoder(encoder_layers_t, 2)
 
         self.projector_t = nn.Sequential(
+            nn.Linear(configs.TSlength_aligned * configs.input_channels, 256),
+
         )
