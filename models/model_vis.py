@@ -42,5 +42,6 @@ class ConTF(nn.Module):
             # Projection layer for time encoder
             z_time = self.projector_t(h_time)
 
-            
+            # Shifted transformation classifier for time encoder
+            s_time = self.shift_cls_layer_t(h_time)
         
