@@ -46,7 +46,7 @@ class ConTF(nn.Module):
             s_time = self.shift_cls_layer_t(h_time)
 
             # Transformer architecture for frequency encoder
-            f = self.transformer_encoder_f(x_in_f.float())
+            f, attention_maps_f = self.transformer_encoder_f(x_in_f.float())
             h_freq = f.reshape(f.shape[0], -1)
 
             # Projection layer for frequency encoder
