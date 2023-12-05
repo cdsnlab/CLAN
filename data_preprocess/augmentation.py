@@ -62,4 +62,6 @@ def select_transformation(aug_method, seq_len):
         my_aug = Quantize(n_levels=20)
     elif(aug_method == 'Resize'):
         my_aug = SCALE(sigma=1.1, loc = 2.)
+    elif(aug_method == 'Reverse'):
+        my_aug = (Reverse())
 
