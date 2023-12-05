@@ -58,3 +58,5 @@ class ConTF(nn.Module):
 
 # Encoder for shifted samples classification
 class ClsTF(nn.Module):
+    def __init__(self, configs, args):
+        super(ClsTF, self).__init__()
