@@ -35,3 +35,9 @@ def arasLoader(file_name, timespan, min_seq):
     dataset_list = []
     # show how labels are displayed
     label_list = []
+
+    # extract file names
+    for x in glob(file_name):
+        file_list.append(x)
+    # sorting by file name
+    file_list.sort()
