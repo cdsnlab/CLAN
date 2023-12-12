@@ -41,3 +41,6 @@ def arasLoader(file_name, timespan, min_seq):
         file_list.append(x)
     # sorting by file name
     file_list.sort()
+
+    # for each file
+    for file in file_list :
