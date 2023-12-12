@@ -61,4 +61,6 @@ def arasLoader(file_name, timespan, min_seq):
                 # for each timespan sec
                 if((i-current_time) >= (timespan/1000)):
                     current_time = i
+                    # if the same activity continue                
+                    if((current_label[0] == temp_df[i, 20]) and (current_label[1] == temp_df[i, 21])):
 
