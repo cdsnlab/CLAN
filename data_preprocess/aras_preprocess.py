@@ -90,5 +90,7 @@ def arasLoader(file_name, timespan, min_seq):
                     dataset_list.append(TSDataSet(temp_dataset, (current_label[1]), len(temp_dataset)))  
 
                 label_list.append(current_label)            
-                
+
     print("Loading ARAS Dataset Finished--------------------------------------")
+
+    return dataset_list
