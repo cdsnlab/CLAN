@@ -126,3 +126,4 @@ def casasLoader(file_name,timespan, min_seq):
                     label_list.append(current_label)
 
     print("Loading CASAS Dataset Finished--------------------------------------")
+    return dataset_list
