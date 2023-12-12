@@ -54,5 +54,6 @@ def arasLoader(file_name, timespan, min_seq):
 
             emp_dataset = np.array([temp_df[0,0:20]]) # 0-19 column is the sensors  
             current_datalist = temp_df[0,0:19]             
+            current_time = 0 
             
 
