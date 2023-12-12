@@ -52,6 +52,7 @@ def arasLoader(file_name, timespan, min_seq):
             current_label[0] = temp_df[0, 20] # 20 column is the label of resident1            
             current_label[1] = temp_df[0, 21] # 21 column is the label of resident2 
 
-            emp_dataset = np.array([temp_df[0,0:20]]) # 0-19 column is the sensors           
+            emp_dataset = np.array([temp_df[0,0:20]]) # 0-19 column is the sensors  
+            current_datalist = temp_df[0,0:19]             
             
 
