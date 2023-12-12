@@ -48,4 +48,9 @@ def arasLoader(file_name, timespan, min_seq):
 
         # at least one ADL exist in the file
         if(len(temp_df)>0):
+            # for the first row
+            current_label[0] = temp_df[0, 20] # 20 column is the label of resident1
+            
+         
+            
 
