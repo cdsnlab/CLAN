@@ -1,6 +1,7 @@
 from glob import glob
 import numpy as np
 import pandas as pd
+import time, datetime
 
 class TSDataSet:
     def __init__(self,data, label, length):
@@ -27,6 +28,9 @@ def casasLoader(file_name,timespan, min_seq):
     
     # for finding sensor types
     sensor_list = []
+
+    # for find sensor types
+    item_list, state_list = [], []
 
     # for find sensor types
     for file in file_list:
