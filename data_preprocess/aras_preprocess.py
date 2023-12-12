@@ -64,7 +64,8 @@ def arasLoader(file_name, timespan, min_seq):
                     # if the same activity continue                
                     if((current_label[0] == temp_df[i, 20]) and (current_label[1] == temp_df[i, 21])):
                         if (current_datalist !=  temp_df[i,0:20]).any():                   
-                            temp_dataset = np.concatenate((temp_dataset, [np.array(temp_df[i,0:19])]), axis=0)
+                            temp_dataset = np.concatenate((temp_dataset, [np.array(temp_df[i,0:20])]), axis=0)
                             current_datalist =  temp_df[i,0:20] 
                     # if the activity is finished (new activity arrival)                   
                     else:
+                        if(len(temp_dataset)>min_seq):
