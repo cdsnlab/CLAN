@@ -92,3 +92,10 @@ def casasLoader(file_name,timespan, min_seq):
                             
                             temp_dataset = np.array([activity_list]) # sensor sequence                   
                         
+                        # if the same activity continue                
+                        if((current_label == int(temp_list[2])) or (len(temp_list)>3 and current_label == int(temp_list[4]))):                            
+                            if(temp_list[0] in ['ON', 'OPEN', 'PRESENT']): # when ['ON', 'OPEN', 'PRESENT']
+                                activity_list[sensor_list.index(temp_df[i, 2])] = 1    
+                            else:   # when ['OFF', 'ABSENT', 'CLOSE']
+                                activity_list[sensor_list.index(temp_df[i, 2])] = 0                           
+                            temp_dataset = np.concatenate((temp_dataset, [activity_list]), axis=0)
