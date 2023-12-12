@@ -15,4 +15,8 @@ class TSDataSet:
 def casasLoader(file_name,timespan, min_seq):
 
     print("Loading CASAS Dataset--------------------------------------")
+
+    # for storing file names
+    file_list = [] 
+    
     
