@@ -67,3 +67,5 @@ def casasLoader(file_name,timespan, min_seq):
 
             # at least one ADL exist in the file
             if(len(temp_df) > 0):
+                activity_list =  np.zeros(len(sensor_list)) # activity_list[0] for resident 1, activity_list[1] for resident 2 
+                temp_dataset = np.array([activity_list]) 
