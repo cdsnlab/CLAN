@@ -25,3 +25,5 @@ def casasLoader(file_name,timespan, min_seq):
     # sort list by file name
     file_list.sort() 
     
+    # for finding sensor types
+    sensor_list = []
