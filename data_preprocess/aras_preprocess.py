@@ -78,6 +78,6 @@ def arasLoader(file_name, timespan, min_seq):
                             label_list.append(current_label)  
                         
                         # new activity append (likely the first row)
-                        temp_dataset = np.array([temp_df[i,0:19]])                                   
+                        temp_dataset = np.array([temp_df[i,0:20]])                                   
                         current_label[0] = temp_df[i, 20] 
                         current_label[1] = temp_df[i, 21]
