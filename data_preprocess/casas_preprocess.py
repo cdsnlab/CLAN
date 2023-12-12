@@ -98,4 +98,12 @@ def casasLoader(file_name,timespan, min_seq):
                                 activity_list[sensor_list.index(temp_df[i, 2])] = 1    
                             else:   # when ['OFF', 'ABSENT', 'CLOSE']
                                 activity_list[sensor_list.index(temp_df[i, 2])] = 0                           
-                            temp_dataset = np.concatenate((temp_dataset, [activity_list]), axis=0)
+                            temp_dataset = np.concatenate((temp_dataset, [activity_list]), axis=0)                        
+                        else:                        
+                            if(len(temp_dataset)>min_seq):
+                                # construct new object(for old activity)          
+                                dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
+                                #print(rid, current_label, len(temp_dataset))
+                                # just for show 
+                                label_list.append(current_label)          
+                                            
