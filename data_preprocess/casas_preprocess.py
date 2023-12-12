@@ -69,3 +69,8 @@ def casasLoader(file_name,timespan, min_seq):
             if(len(temp_df) > 0):
                 activity_list =  np.zeros(len(sensor_list)) # activity_list[0] for resident 1, activity_list[1] for resident 2 
                 temp_dataset = np.array([activity_list]) 
+                
+                # for each row 
+                for i in range(0, len(temp_df)):                    
+                    temp_list = list(temp_df[i, 3].split(" ")) # 0 : State, 1:Resident# , 2: Resedient_A1, 3: Resident#, 4: Resident_A2 
+                    
