@@ -23,3 +23,5 @@ class TSDataSet:
 
 
 def arasLoader(file_name, timespan, min_seq):
+    
+    print("Loading ARAS Dataset--------------------------------------")
