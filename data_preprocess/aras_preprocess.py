@@ -81,3 +81,6 @@ def arasLoader(file_name, timespan, min_seq):
                         temp_dataset = np.array([temp_df[i,0:20]])                                   
                         current_label[0] = temp_df[i, 20] 
                         current_label[1] = temp_df[i, 21]
+
+            if(len(temp_dataset)>min_seq):
+                # for the last activity
