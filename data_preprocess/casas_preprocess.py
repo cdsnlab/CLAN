@@ -47,3 +47,13 @@ def casasLoader(file_name,timespan, min_seq):
     #                item_list.append(temp_df[i, 2])   
     #            if temp_list[0] not in state_list:
     #                state_list.append(temp_list[0]) 
+    
+    current_label = 0 # current label
+
+    # for constructing dataset's data structure (return variable : an object list)
+    dataset_list = []
+    # show how labels are displayed
+    label_list = []
+
+    sensor_list = ['M19', 'M23', 'M18', 'M01', 'M17', 'D07', 'M21', 'M22', 'M03', 'I04', 'D12', 'I06', 'M26', 'M04', 'M02', 'M07', 'M08', 'M09', 'M14', 'M15', 'M16', 'M06', 'M10', 'M11', 'M51', 'D11', 'M13', 'M12', 'D14', 'D13', 'D10', 'M05', 'D09', 'D15', 'M20', 'M25', 'M24']
+    
