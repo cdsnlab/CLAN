@@ -118,4 +118,9 @@ def casasLoader(file_name,timespan, min_seq):
                                 current_label =  int(temp_list[2]) # 2 column is the label
                             elif(int(temp_list[3])-1 == rid):
                                 current_label =  int(temp_list[4]) 
-                                            
+                                
+                if(len(temp_dataset)>min_seq):
+                    # for the last activity
+                    dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
+                    # just for show
+                    label_list.append(current_label)
