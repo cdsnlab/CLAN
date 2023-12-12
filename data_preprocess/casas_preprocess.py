@@ -19,4 +19,9 @@ def casasLoader(file_name,timespan, min_seq):
     # for storing file names
     file_list = [] 
     
+    # extract file names
+    for x in glob(file_name):
+        file_list.append(x)
+    # sort list by file name
+    file_list.sort() 
     
