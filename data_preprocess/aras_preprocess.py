@@ -20,3 +20,6 @@ class TSDataSet:
 # After refining (min sample remove) ARAS B
 # types_label : [2, 1]
 # count_label : [31, 31]
+
+
+def arasLoader(file_name, timespan, min_seq):
