@@ -58,4 +58,6 @@ def arasLoader(file_name, timespan, min_seq):
             
             # for each row 
             for i in range(1, len(temp_df)):
+                # for each timespan sec
+                if((i-current_time) >= (timespan/1000)):
 
