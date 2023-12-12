@@ -1,13 +1,14 @@
 from glob import glob
 import numpy as np
 import pandas as pd
-import time, datetime
+
 
 class TSDataSet:
     def __init__(self,data, label, length):
         self.data = data
         self.label = int(label)
         self.length= int(length)
+
 
 # CASAS data format : timestamp(when activated), sensor type+context name, state, user #, activity label : [1-15] 
 # file name = day 
@@ -16,7 +17,7 @@ class TSDataSet:
 def casasLoader(file_name,timespan, min_seq):
 
     print("Loading CASAS Dataset--------------------------------------")
-
+    
     # for storing file names
     file_list = [] 
     
@@ -25,17 +26,15 @@ def casasLoader(file_name,timespan, min_seq):
         file_list.append(x)
     # sort list by file name
     file_list.sort() 
-    
+
     # for finding sensor types
     sensor_list = []
 
-    # for find sensor types
-    item_list, state_list = [], []
 
     # for find sensor types
-    # for file in file_list:
+    #for file in file_list:
     #    temp_df = pd.read_csv(file, sep = ',', header = None).to_numpy() 
-    # #if the file is not empty
+        # if the file is not empty
     #    if(len(temp_df)>0):
     #        for i in range(0, len(temp_df)):
     #            temp_list = list(temp_df[i, 3].split(" "))    
@@ -46,7 +45,8 @@ def casasLoader(file_name,timespan, min_seq):
     #            if temp_df[i, 2] not in item_list:
     #                item_list.append(temp_df[i, 2])   
     #            if temp_list[0] not in state_list:
-    #                state_list.append(temp_list[0]) 
+    #                state_list.append(temp_list[0])    
+
     
     current_label = 0 # current label
 
@@ -64,9 +64,9 @@ def casasLoader(file_name,timespan, min_seq):
         for file in file_list:
             temp_df = pd.read_csv(file, sep = '	', header = None)
             temp_df = temp_df.to_numpy()
-
+            #print(file)
             # at least one ADL exist in the file
-            if(len(temp_df) > 0):
+            if(len(temp_df)>0):
                 activity_list =  np.zeros(len(sensor_list)) # activity_list[0] for resident 1, activity_list[1] for resident 2 
                 temp_dataset = np.array([activity_list]) 
                 
@@ -78,13 +78,13 @@ def casasLoader(file_name,timespan, min_seq):
                     if(len(temp_list)==3 and int(temp_list[1])-1 == rid) or (len(temp_list)>3 and (int(temp_list[1])-1 == rid or int(temp_list[3])-1 == rid)):
                         #print(rid,":", file, i, temp_list)
                         if(current_label==0):
-
+                            
                             # for the first row
                             if(int(temp_list[1])-1 == rid):
                                 current_label =  int(temp_list[2])  # 2 column is the label
                             elif(int(temp_list[3])-1 == rid):
-                                current_label =  int(temp_list[4]) 
-
+                                current_label =  int(temp_list[4])    
+                            
                             if(temp_list[0] in ['ON', 'OPEN', 'PRESENT']): # when ['ON', 'OPEN', 'PRESENT']
                                 activity_list[sensor_list.index(temp_df[i, 2])] = 1    
                             else:   # when ['OFF', 'ABSENT', 'CLOSE']
@@ -98,7 +98,8 @@ def casasLoader(file_name,timespan, min_seq):
                                 activity_list[sensor_list.index(temp_df[i, 2])] = 1    
                             else:   # when ['OFF', 'ABSENT', 'CLOSE']
                                 activity_list[sensor_list.index(temp_df[i, 2])] = 0                           
-                            temp_dataset = np.concatenate((temp_dataset, [activity_list]), axis=0)                        
+                            temp_dataset = np.concatenate((temp_dataset, [activity_list]), axis=0)
+                        # if the activity is finished (new activity arrival)
                         else:                        
                             if(len(temp_dataset)>min_seq):
                                 # construct new object(for old activity)          
@@ -106,7 +107,7 @@ def casasLoader(file_name,timespan, min_seq):
                                 #print(rid, current_label, len(temp_dataset))
                                 # just for show 
                                 label_list.append(current_label)          
-                            
+                                            
                             # new activity append (likely the first row)
                             activity_list = [0 for k in range(len(sensor_list))]
                             if(temp_list[0] in ['ON', 'OPEN', 'PRESENT']): # when ['ON', 'OPEN', 'PRESENT']
@@ -117,13 +118,13 @@ def casasLoader(file_name,timespan, min_seq):
                             if(int(temp_list[1])-1 == rid):
                                 current_label =  int(temp_list[2]) # 2 column is the label
                             elif(int(temp_list[3])-1 == rid):
-                                current_label =  int(temp_list[4]) 
-
+                                current_label =  int(temp_list[4])    
                 if(len(temp_dataset)>min_seq):
                     # for the last activity
                     dataset_list.append(TSDataSet(temp_dataset, current_label, len(temp_dataset)))
                     # just for show
                     label_list.append(current_label)
-
+                    #print(rid, current_label, len(temp_dataset))
     print("Loading CASAS Dataset Finished--------------------------------------")
     return dataset_list
+
