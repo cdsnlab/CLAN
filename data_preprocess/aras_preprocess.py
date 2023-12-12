@@ -85,4 +85,6 @@ def arasLoader(file_name, timespan, min_seq):
             if(len(temp_dataset)>min_seq):
                 # for the last activity
                 if(current_label[0] != temp_df[i, 20]):          
-                    dataset_list.append(TSDataSet(temp_dataset, (current_label[0]), len(temp_dataset)))
+                    dataset_list.append(TSDataSet(temp_dataset, (current_label[0]), len(temp_dataset)))                
+                else:
+                    dataset_list.append(TSDataSet(temp_dataset, (current_label[1]), len(temp_dataset)))              
