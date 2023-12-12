@@ -23,5 +23,10 @@ class TSDataSet:
 
 
 def arasLoader(file_name, timespan, min_seq):
-    
+
     print("Loading ARAS Dataset--------------------------------------")
+
+    # variable initialization
+    file_list = [] # store file names
+    current_label = [0,0] # current label
+    current_time = 0 # current time
