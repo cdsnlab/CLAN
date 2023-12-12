@@ -27,3 +27,19 @@ def casasLoader(file_name,timespan, min_seq):
     
     # for finding sensor types
     sensor_list = []
+
+    # for find sensor types
+    for file in file_list:
+       temp_df = pd.read_csv(file, sep = ',', header = None).to_numpy() 
+    #if the file is not empty
+       if(len(temp_df)>0):
+           for i in range(0, len(temp_df)):
+               temp_list = list(temp_df[i, 3].split(" "))    
+
+               # time            
+               timestamp = time.mktime(datetime.strptime((temp_df[i, 0]+' '+temp_df[i, 1]), '%Y-%m-%d %H:%M:%S.%f').timetuple())
+            
+               if temp_df[i, 2] not in item_list:
+                   item_list.append(temp_df[i, 2])   
+               if temp_list[0] not in state_list:
+                   state_list.append(temp_list[0]) 
