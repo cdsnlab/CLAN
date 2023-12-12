@@ -44,3 +44,5 @@ def arasLoader(file_name, timespan, min_seq):
 
     # for each file
     for file in file_list :
+        temp_df = pd.read_csv(file, sep = ' ', header = None).to_numpy()
+
