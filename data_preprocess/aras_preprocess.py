@@ -46,3 +46,6 @@ def arasLoader(file_name, timespan, min_seq):
     for file in file_list :
         temp_df = pd.read_csv(file, sep = ' ', header = None).to_numpy()
 
+        # at least one ADL exist in the file
+        if(len(temp_df)>0):
+
