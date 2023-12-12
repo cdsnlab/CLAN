@@ -69,3 +69,5 @@ def arasLoader(file_name, timespan, min_seq):
                     # if the activity is finished (new activity arrival)                   
                     else:
                         if(len(temp_dataset)>min_seq):
+                            # construct new object(for old activity)
+                            if(current_label[0] != temp_df[i, 20]):
