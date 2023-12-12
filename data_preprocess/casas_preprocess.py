@@ -106,4 +106,16 @@ def casasLoader(file_name,timespan, min_seq):
                                 #print(rid, current_label, len(temp_dataset))
                                 # just for show 
                                 label_list.append(current_label)          
+                            
+                            # new activity append (likely the first row)
+                            activity_list = [0 for k in range(len(sensor_list))]
+                            if(temp_list[0] in ['ON', 'OPEN', 'PRESENT']): # when ['ON', 'OPEN', 'PRESENT']
+                                activity_list[sensor_list.index(temp_df[i, 2])] = 1    
+                            else:   # when ['OFF', 'ABSENT', 'CLOSE']
+                                activity_list[sensor_list.index(temp_df[i, 2])] = 0
+                            temp_dataset = np.array([activity_list])                                 
+                            if(int(temp_list[1])-1 == rid):
+                                current_label =  int(temp_list[2]) # 2 column is the label
+                            elif(int(temp_list[3])-1 == rid):
+                                current_label =  int(temp_list[4]) 
                                             
