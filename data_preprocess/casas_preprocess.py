@@ -78,3 +78,9 @@ def casasLoader(file_name,timespan, min_seq):
                     if(len(temp_list)==3 and int(temp_list[1])-1 == rid) or (len(temp_list)>3 and (int(temp_list[1])-1 == rid or int(temp_list[3])-1 == rid)):
                         #print(rid,":", file, i, temp_list)
                         if(current_label==0):
+
+                            # for the first row
+                            if(int(temp_list[1])-1 == rid):
+                                current_label =  int(temp_list[2])  # 2 column is the label
+                            elif(int(temp_list[3])-1 == rid):
+                                current_label =  int(temp_list[4]) 
