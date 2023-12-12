@@ -74,3 +74,7 @@ def casasLoader(file_name,timespan, min_seq):
                 for i in range(0, len(temp_df)):                    
                     temp_list = list(temp_df[i, 3].split(" ")) # 0 : State, 1:Resident# , 2: Resedient_A1, 3: Resident#, 4: Resident_A2 
                     
+                    # if the row is related to the resident
+                    if(len(temp_list)==3 and int(temp_list[1])-1 == rid) or (len(temp_list)>3 and (int(temp_list[1])-1 == rid or int(temp_list[3])-1 == rid)):
+                        #print(rid,":", file, i, temp_list)
+                        if(current_label==0):
