@@ -66,4 +66,4 @@ def casasLoader(file_name,timespan, min_seq):
             temp_df = temp_df.to_numpy()
 
             # at least one ADL exist in the file
-            if(len(temp_df)>0):
+            if(len(temp_df) > 0):
