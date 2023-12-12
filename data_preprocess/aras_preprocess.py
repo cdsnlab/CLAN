@@ -70,4 +70,9 @@ def arasLoader(file_name, timespan, min_seq):
                     else:
                         if(len(temp_dataset)>min_seq):
                             # construct new object(for old activity)
-                            if(current_label[0] != temp_df[i, 20]):
+                            if(current_label[0] != temp_df[i, 20]):  # first resident's activity is changed
+                                dataset_list.append(TSDataSet(temp_dataset, (current_label[0]), len(temp_dataset)))
+                            else: # second resident's activity is changed
+                                dataset_list.append(TSDataSet(temp_dataset, (current_label[1]), len(temp_dataset)))
+                            # just for show 
+                            label_list.append(current_label)  
