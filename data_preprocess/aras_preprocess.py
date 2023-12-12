@@ -56,4 +56,6 @@ def arasLoader(file_name, timespan, min_seq):
             current_datalist = temp_df[0,0:19]             
             current_time = 0 
             
+            # for each row 
+            for i in range(1, len(temp_df)):
 
