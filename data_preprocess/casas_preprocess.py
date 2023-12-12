@@ -60,3 +60,5 @@ def casasLoader(file_name,timespan, min_seq):
     # construct dataset's data structure 
     # for each resident
     for rid in range(0,2):
+        # for each file
+        for file in file_list:
